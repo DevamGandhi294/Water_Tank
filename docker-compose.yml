@@ -57,6 +57,7 @@ services:
       OTA_DIR: /srv/ota
       LOG_LEVEL: ${LOG_LEVEL:-debug}
       RATE_LIMIT_SCALE: ${RATE_LIMIT_SCALE:-1}
+      ACCESS_TOKEN_TTL_S: ${ACCESS_TOKEN_TTL_S:-900}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     volumes:
