@@ -25,3 +25,5 @@ mobile/ios/Pods/
 *.iml
 .idea/
 deploy/certs/
+deploy/secrets/*
+!deploy/secrets/README.md
