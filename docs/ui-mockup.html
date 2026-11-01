@@ -1,0 +1,699 @@
+<title>Water Tank App Screens</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: screen index on the left, live device frame in the middle, the API calls that screen needs on the right. */
+:root{
+  --bg:#eef2f3; --panel:#ffffff; --ink:#14232a; --muted:#5b6f77; --line:#d5dfe2;
+  --water:#1f7fb8; --water-2:#7cc4e8; --water-soft:#dceef8; --deep:#0e3a52;
+  --ok:#1d8a52; --ok-soft:#dcf2e6; --warn:#b26a00; --warn-soft:#fbeed5; --bad:#c2372f; --bad-soft:#fbe1df;
+  --frame:#1b262b; --screen:#f7fafb; --card:#ffffff;
+  --get:#1d8a52; --post:#1f7fb8; --patch:#8a5a00; --put:#6b4fb3; --del:#c2372f;
+  --display:"Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0d1518; --panel:#142024; --ink:#e3ecef; --muted:#93a8b0; --line:#26363c;
+  --water:#4aa8dd; --water-2:#2a6f99; --water-soft:#16313f; --deep:#9fd3ef;
+  --ok:#4cc286; --ok-soft:#143326; --warn:#e3a647; --warn-soft:#3a2b12; --bad:#ef6f66; --bad-soft:#3d1a18;
+  --frame:#000; --screen:#101a1e; --card:#18252a;
+  --get:#4cc286; --post:#4aa8dd; --patch:#e3a647; --put:#a68cf0; --del:#ef6f66; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0d1518; --panel:#142024; --ink:#e3ecef; --muted:#93a8b0; --line:#26363c;
+  --water:#4aa8dd; --water-2:#2a6f99; --water-soft:#16313f; --deep:#9fd3ef;
+  --ok:#4cc286; --ok-soft:#143326; --warn:#e3a647; --warn-soft:#3a2b12; --bad:#ef6f66; --bad-soft:#3d1a18;
+  --frame:#000; --screen:#101a1e; --card:#18252a;
+  --get:#4cc286; --post:#4aa8dd; --patch:#e3a647; --put:#a68cf0; --del:#ef6f66; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px;max-width:1500px;margin:0 auto}
+header.top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;margin-bottom:18px}
+header.top h1{font-family:var(--display);font-size:26px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+header.top p{margin:0;color:var(--muted);max-width:70ch}
+.layout{display:grid;grid-template-columns:230px minmax(0,1fr) 380px;gap:20px;align-items:start}
+.layout.admin{grid-template-columns:230px minmax(0,1fr);}
+.layout.admin .api{grid-column:2}
+nav.index{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;gap:14px}
+nav.index h2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0 0 4px;font-weight:600}
+nav.index .grp{display:flex;flex-direction:column;gap:2px}
+nav.index button{all:unset;cursor:pointer;padding:6px 10px;border-radius:7px;color:var(--ink);display:flex;gap:8px;align-items:baseline}
+nav.index button .n{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:22px}
+nav.index button:hover{background:var(--panel)}
+nav.index button.on{background:var(--water);color:#fff}
+nav.index button.on .n{color:#ffffffb0}
+nav.index button:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+.stage{display:flex;justify-content:center;min-width:0}
+.api{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.api h3{font-family:var(--display);font-size:18px;margin:0 0 2px}
+.api .why{color:var(--muted);margin:0 0 12px}
+.api h4{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:16px 0 6px;font-weight:600}
+.call{display:grid;grid-template-columns:52px minmax(0,1fr);gap:2px 8px;padding:8px;border-radius:8px;border:1px solid transparent;transition:background .3s,border-color .3s}
+.call + .call{margin-top:2px}
+.call .m{font-family:var(--mono);font-size:11px;font-weight:500;padding-top:1px}
+.call .p{font-family:var(--mono);font-size:12.5px;word-break:break-word}
+.call .d{grid-column:2;color:var(--muted);font-size:12.5px}
+.call .r{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:6px;white-space:nowrap}
+.call .no{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-right:4px}
+.m.GET{color:var(--get)} .m.POST{color:var(--post)} .m.PATCH{color:var(--patch)} .m.PUT{color:var(--put)} .m.DELETE{color:var(--del)} .m.WS,.m.MQTT{color:var(--deep)}
+.call.fired{background:var(--water-soft);border-color:var(--water)}
+.api .tip{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);margin-top:14px;padding-top:10px}
+
+/* ---------- phone ---------- */
+.phone{width:372px;max-width:100%;background:var(--frame);border-radius:44px;padding:12px;box-shadow:0 20px 50px -20px #0e3a5266}
+.scr{background:var(--screen);border-radius:33px;height:760px;overflow:hidden;display:flex;flex-direction:column;position:relative;color:var(--ink)}
+.sbar{display:flex;justify-content:space-between;padding:12px 26px 4px;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.body{flex:1;overflow-y:auto;padding:6px 18px 18px;display:flex;flex-direction:column;gap:14px}
+.tabs{display:flex;border-top:1px solid var(--line);background:var(--card)}
+.tabs button{all:unset;cursor:pointer;flex:1;text-align:center;padding:10px 0 14px;font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
+.tabs button.on{color:var(--water);font-weight:600}
+.tabs svg{width:20px;height:20px}
+.ah{display:flex;align-items:center;gap:10px;min-height:40px}
+.ah h2{font-family:var(--display);font-size:21px;margin:0;flex:1;letter-spacing:-.01em}
+.back{all:unset;cursor:pointer;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line)}
+.ico{all:unset;cursor:pointer;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);position:relative}
+.ico .dot{position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--bad);border:2px solid var(--card)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.lbl{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:500}
+.inp{width:100%;font:inherit;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.inp:focus{outline:2px solid var(--water);border-color:transparent}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:12px 16px;border-radius:12px;font-weight:600;background:var(--water);color:#fff;display:block}
+.btn.ghost{background:transparent;color:var(--water);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--line)}
+.btn.sm{padding:7px 12px;font-size:13px;border-radius:9px;display:inline-block}
+.btn:focus-visible,.back:focus-visible,.ico:focus-visible{outline:2px solid var(--water);outline-offset:2px}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.muted{color:var(--muted)} .small{font-size:12.5px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.info{background:var(--water-soft);color:var(--water)}
+.pill i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.brand{display:flex;flex-direction:column;align-items:center;gap:8px;padding:30px 0 6px}
+.brand b{font-family:var(--display);font-size:26px;letter-spacing:-.01em}
+.otp{display:flex;gap:8px;justify-content:space-between}
+.otp span{flex:1;aspect-ratio:1/1.15;max-width:100%;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;font-family:var(--mono);font-size:20px;background:var(--card)}
+.otp span.f{border-color:var(--water)}
+.tankcard{display:grid;grid-template-columns:62px 1fr;gap:14px;align-items:center;cursor:pointer}
+.tankcard:hover{border-color:var(--water)}
+.minitank{width:62px;height:76px;border:2px solid var(--line);border-radius:10px;position:relative;overflow:hidden;background:var(--screen)}
+.minitank .w{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(var(--water-2),var(--water))}
+.big{font-family:var(--display);font-size:46px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.big small{font-size:20px;color:var(--muted);margin-left:2px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 10px}
+.stats b{display:block;font-family:var(--display);font-size:17px;font-variant-numeric:tabular-nums}
+.stats span{font-size:11px;color:var(--muted)}
+.pumpbtn{all:unset;box-sizing:border-box;cursor:pointer;width:100%;border-radius:18px;padding:16px;display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line)}
+.pumpbtn .sw{width:58px;height:32px;border-radius:99px;background:var(--line);position:relative;transition:background .25s}
+.pumpbtn .sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .25s;box-shadow:0 1px 3px #0003}
+.pumpbtn.on .sw{background:var(--ok)} .pumpbtn.on .sw::after{left:29px}
+.pumpbtn.busy .sw{background:var(--water-2)}
+.pumpbtn:focus-visible{outline:2px solid var(--water)}
+.list{display:flex;flex-direction:column}
+.list > div,.list > button{padding:11px 0;border-bottom:1px solid var(--line)}
+.list > :last-child{border-bottom:0}
+.list > button{all:unset;cursor:pointer;padding:12px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:3px}
+.seg button{all:unset;cursor:pointer;flex:1;text-align:center;padding:7px;border-radius:8px;font-size:13px;color:var(--muted)}
+.seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 2px #0001}
+.toggle{width:42px;height:24px;border-radius:99px;background:var(--line);position:relative;flex:none;cursor:pointer;border:0}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s}
+.toggle.on{background:var(--water)} .toggle.on::after{left:21px}
+input[type=range]{width:100%;accent-color:var(--water)}
+.days{display:flex;gap:5px}
+.days span{flex:1;text-align:center;font-size:11.5px;padding:6px 0;border-radius:8px;border:1px solid var(--line);color:var(--muted)}
+.days span.on{background:var(--water-soft);color:var(--water);border-color:transparent;font-weight:600}
+.scanner{aspect-ratio:1;max-width:100%;border-radius:20px;background:#0b1418;position:relative;overflow:hidden;display:grid;place-items:center}
+.scanner .box{width:62%;aspect-ratio:1;border:3px solid #7cc4e8;border-radius:18px;position:relative}
+.scanner .beam{position:absolute;left:8%;right:8%;height:2px;background:#7cc4e8;box-shadow:0 0 10px #7cc4e8;animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{0%,100%{top:12%}50%{top:86%}}
+@media (prefers-reduced-motion: reduce){.scanner .beam{animation:none;top:50%}}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:18px;box-shadow:0 -10px 30px #0003;display:flex;flex-direction:column;gap:12px;z-index:3}
+.scrim{position:absolute;inset:0;background:#0006;z-index:2}
+.banner{border-radius:14px;padding:12px;display:flex;gap:10px;align-items:flex-start}
+.banner.info{background:var(--water-soft)} .banner.warn{background:var(--warn-soft)}
+.toast{position:absolute;left:18px;right:18px;bottom:76px;background:var(--ink);color:var(--screen);padding:10px 14px;border-radius:12px;font-size:13px;z-index:5;transition:opacity .3s}
+.chart{display:flex;align-items:flex-end;gap:6px;height:90px}
+.chart div{flex:1;background:var(--water);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+.chart div span{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:var(--muted)}
+.ev{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:start}
+.ev i{width:8px;height:8px;border-radius:50%;margin-top:6px}
+
+/* ---------- admin browser ---------- */
+.browser{width:100%;max-width:1060px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 20px 50px -25px #0e3a5255}
+.chrome{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
+.chrome .dots{display:flex;gap:6px}.chrome .dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}
+.chrome .url{flex:1;font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 10px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.adm{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:640px}
+.adm aside{background:var(--deep);color:#fff;padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+:root[data-theme="dark"] .adm aside{background:#0a2533}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .adm aside{background:#0a2533}}
+.adm aside b{font-family:var(--display);font-size:17px;padding:4px 10px 14px}
+.adm aside b small{display:block;font-family:var(--body);font-weight:400;font-size:11px;opacity:.7}
+.adm aside button{all:unset;cursor:pointer;padding:8px 10px;border-radius:7px;font-size:13.5px;color:#d9ecf6}
+.adm aside button.on{background:#ffffff1f;color:#fff;font-weight:600}
+.adm main{padding:20px 22px;display:flex;flex-direction:column;gap:16px;min-width:0;background:var(--screen)}
+.adm h2{font-family:var(--display);font-size:22px;margin:0}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tile span{font-size:12px;color:var(--muted)} .tile > b{display:block;font-family:var(--display);font-size:28px;font-variant-numeric:tabular-nums;margin-top:2px}
+.tile em{font-style:normal;font-size:12px}
+.tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--line)}
+td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.mono,.mono{font-family:var(--mono);font-size:12px}
+tbody tr.click{cursor:pointer} tbody tr.click:hover{background:var(--water-soft)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar .inp{width:auto;flex:1;min-width:180px;padding:8px 11px}
+.toolbar select{font:inherit;padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.kv{display:grid;grid-template-columns:120px minmax(0,1fr);gap:6px 10px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;word-break:break-word}
+.qrbox{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.sticker{background:#fff;color:#111;border-radius:10px;padding:12px;display:flex;gap:12px;align-items:center;border:1px dashed #9ab}
+.sticker #qr img,.sticker #qr canvas{width:116px;height:116px}
+.secret{background:var(--warn-soft);border-radius:10px;padding:10px 12px;font-size:13px}
+.bar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+
+@media (max-width:1200px){ .layout{grid-template-columns:200px minmax(0,1fr)} .layout .api{grid-column:2} }
+@media (max-width:820px){
+  .layout,.layout.admin{grid-template-columns:minmax(0,1fr)} .layout .api,.layout.admin .api{grid-column:1}
+  nav.index{position:static;flex-direction:row;overflow-x:auto;gap:16px;padding-bottom:6px}
+  nav.index .grp{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:4px} nav.index .grp h2{white-space:nowrap;margin:0 6px 0 0} nav.index .grp.note{display:none} nav.index{align-items:center}
+  nav.index button{white-space:nowrap}
+  .adm{grid-template-columns:minmax(0,1fr)} .adm aside{flex-direction:row;overflow-x:auto} .adm aside b{display:none}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))} .two{grid-template-columns:minmax(0,1fr)}
+  .scr{height:700px}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>Water Tank app and admin panel</h1>
+    <p>Click through the screens. Each one lists the API calls it needs on the right, and tapping a button in the mockup highlights the call it makes. Numbers match <span class="mono">docs/API.md</span>. All data is sample data.</p>
+  </header>
+  <div class="layout" id="layout">
+    <nav class="index" id="index" aria-label="Screens"></nav>
+    <div class="stage" id="stage"></div>
+    <aside class="api" id="api" aria-live="polite"></aside>
+  </div>
+</div>
+
+<script>
+// ------------------------------------------------------------------ sample state
+const S = {
+  pumpOn:false, busy:false, online:true, status:'WORK',
+  tankHeight:180, cutoff:35, cutoffDraft:35, version:4, applied:4, autoMode:true,
+  distance:62.4, maxMin:60,
+  histTab:'runs', timerSheet:false, shareSheet:false, removeSheet:false,
+  admTab:'dashboard', reg:null, regErr:'', devQ:'', invite:true,
+  timers:[
+    {name:'Morning fill',start:'06:00',stop:'06:30',days:[1,1,1,1,1,1,1],below:null,on:true},
+    {name:'Evening top-up',start:'18:00',stop:'18:20',days:[1,1,1,1,1,0,0],below:50,on:true},
+  ],
+};
+const pct = () => Math.max(0, Math.min(100, Math.round((S.tankHeight - S.distance) / (S.tankHeight - S.cutoff) * 100)));
+
+// ------------------------------------------------------------------ API catalogue (mirrors API.md)
+const A = {
+ '1.1':['POST','/auth/register','public','Create account, sends SMS OTP'],
+ '1.2':['POST','/auth/otp/send','public','Send or resend OTP'],
+ '1.3':['POST','/auth/otp/verify','public','Check the 6 digit code, returns tokens'],
+ '1.4':['POST','/auth/login','public','Phone + password → access + refresh token'],
+ '1.5':['POST','/auth/google','public','Google ID token → tokens (creates user if new)'],
+ '1.6':['POST','/auth/refresh','public','Silent token refresh'],
+ '1.7':['POST','/auth/logout','user','Log out this phone'],
+ '1.8':['POST','/auth/logout-all','user','Log out every phone'],
+ '1.9':['POST','/auth/password/reset','public','Set new password with reset token'],
+ '2.1':['GET','/me','user','Profile + unread count'],
+ '2.2':['PATCH','/me','user','Change name / email'],
+ '2.3':['POST','/me/password','user','Change password'],
+ '2.6':['POST','/me/push-tokens','user','Register FCM token on app start'],
+ '2.8':['GET','/me/sessions','user','Logged-in phones'],
+ '2.10':['DELETE','/me','user','Delete account'],
+ '3.1':['GET','/devices','user','My tanks (owned + shared) with live state'],
+ '3.2':['POST','/devices/claim/check','user','Check QR code before adding'],
+ '3.3':['POST','/devices/claim','user','Add tank to my account (one owner only)'],
+ '3.4':['GET','/devices/:id','view','Tank detail, boards, settings, open pump run'],
+ '3.5':['PATCH','/devices/:id','owner','Rename, location, time zone'],
+ '3.6':['DELETE','/devices/:id','owner','Remove tank from my account'],
+ '3.7':['DELETE','/devices/:id/me','view','Leave a shared tank'],
+ '4.1':['GET','/devices/:id/settings','view','Cutoff, height, auto mode, sync version'],
+ '4.2':['PATCH','/devices/:id/settings','owner','Save cutoff (min 25 cm) → sent to ESP'],
+ '4.3':['GET','/devices/:id/settings/history','owner','Who changed what, when ESP confirmed'],
+ '5.1':['POST','/devices/:id/pump','control','{action:"on"|"off"} → 202 commandId'],
+ '5.2':['GET','/devices/:id/commands/:cid','control','Command status (fallback)'],
+ '6.1':['GET','/devices/:id/timers','view','List timers'],
+ '6.2':['POST','/devices/:id/timers','control','Create timer'],
+ '6.3':['PATCH','/devices/:id/timers/:tid','control','Edit / enable / disable'],
+ '6.4':['DELETE','/devices/:id/timers/:tid','control','Delete timer'],
+ '7.1':['GET','/devices/:id/members','owner','Owner, members, pending invites'],
+ '7.2':['POST','/devices/:id/invites','owner','Invite by phone as view / control'],
+ '7.3':['DELETE','/devices/:id/invites/:iid','owner','Cancel invite'],
+ '7.4':['PATCH','/devices/:id/members/:uid','owner','Change view ↔ control'],
+ '7.5':['DELETE','/devices/:id/members/:uid','owner','Remove access'],
+ '7.6':['GET','/invites','user','Invites waiting for me'],
+ '7.7':['POST','/invites/:id/accept','user','Accept invite'],
+ '7.8':['POST','/invites/:id/decline','user','Decline invite'],
+ '8.1':['GET','/devices/:id/pump-runs','view','Pump ON→OFF log, who / why'],
+ '8.2':['GET','/devices/:id/pump-runs/summary','view','Run time per day / week / month'],
+ '8.3':['GET','/devices/:id/events','view','Faults, cutoffs, reboots, offline'],
+ '9.1':['GET','/notifications','user','My notifications'],
+ '9.2':['POST','/notifications/read','user','Mark read'],
+ '9.3':['GET','/devices/:id/alerts','view','My alert settings for this tank'],
+ '9.4':['PUT','/devices/:id/alerts','view','Save my alert settings'],
+ '10.1':['GET','/admin/stats','admin','Dashboard numbers'],
+ '10.2':['GET','/admin/events','admin','Open faults across all devices'],
+ '10.3':['GET','/admin/devices','admin','Search by serial, MAC, owner, status'],
+ '10.4':['POST','/admin/devices','admin','Register main + sender MAC → secret, claim code, QR'],
+ '10.5':['POST','/admin/devices/bulk','admin','CSV of MAC pairs → sticker sheet'],
+ '10.6':['GET','/admin/devices/:id','admin','Full device detail'],
+ '10.7':['PATCH','/admin/devices/:id','admin','Edit / disable device'],
+ '10.8':['POST','/admin/devices/:id/claim-code','admin','New claim code + QR'],
+ '10.9':['POST','/admin/devices/:id/secret','admin','Rotate MQTT secret'],
+ '10.10':['POST','/admin/devices/:id/unclaim','admin','Remove owner'],
+ '10.11':['POST','/admin/devices/:id/transfer','admin','Move to another phone'],
+ '10.12':['POST','/admin/devices/:id/boards','admin','Replace a board (repair)'],
+ '10.13':['POST','/admin/devices/:id/commands','admin','Pump / reboot / config / OTA check'],
+ '10.16':['GET','/admin/users','admin','Search users'],
+ '10.17':['GET','/admin/users/:id','admin','User detail'],
+ '10.18':['POST','/admin/users/:id/block','admin','Block (logs out at once)'],
+ '10.19':['POST','/admin/users/:id/unblock','admin','Unblock'],
+ '10.20':['POST','/admin/users/:id/logout-all','admin','Force logout'],
+ '10.22':['GET','/admin/firmware','admin','Firmware releases'],
+ '10.23':['POST','/admin/firmware','admin','Upload .bin (multipart)'],
+ '10.24':['PATCH','/admin/firmware/:id','admin','Mark stable'],
+ '10.26':['POST','/admin/ota/rollouts','admin','Push to one / some / all'],
+ '10.28':['GET','/admin/ota/rollouts/:id','admin','Per-device progress'],
+ '10.29':['POST','/admin/ota/rollouts/:id/cancel','admin','Cancel rollout'],
+ '10.31':['GET','/admin/audit','admin','Admin action log'],
+ 'ws.sub':['WS','device:subscribe','user','Join live rooms for these tanks'],
+ 'ws.state':['WS','device:state','server→app','Level cm/%, pump, status, online'],
+ 'ws.cmd':['WS','command:result','server→app','ON/OFF acked or failed'],
+ 'ws.sync':['WS','settings:sync','server→app','Sending… / Saved on device ✓'],
+ 'ws.run':['WS','pump:run','server→app','Pump run opened / closed'],
+ 'ws.event':['WS','device:event','server→app','New fault / cutoff'],
+ 'ws.notif':['WS','notification','server→app','Bell badge'],
+ 'ws.stats':['WS','admin:stats','server→admin','Live tiles'],
+ 'ws.ota':['WS','ota:progress','server→admin','Rollout progress'],
+ 'mq.cmd':['MQTT','wt/&lt;d&gt;/cmd → cmd/ack','backend↔ESP','Pump ON/OFF to the relay board'],
+ 'mq.set':['MQTT','wt/&lt;d&gt;/settings/set → settings/ack','backend↔ESP','Cutoff saved in EEPROM, ack with version'],
+ 'mq.state':['MQTT','wt/&lt;d&gt;/state, wt/&lt;d&gt;/status (LWT)','ESP→backend','Live values and last will'],
+ 'mq.ota':['MQTT','wt/&lt;d&gt;/ota → ota/status','backend↔ESP','OTA url + sha256, progress back'],
+};
+
+// ------------------------------------------------------------------ screens
+const ic = {
+  back:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  bell:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 16V11a6 6 0 1112 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 004 0"/></svg>',
+  plus:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  gear:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>',
+  tank:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M5 13c2.5-1.5 4.5 1.5 7 0s4.5 1.5 7 0"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+  g:'<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>',
+};
+const hdr = (title, back, right='') => `<div class="ah">${back?`<button class="back" data-go="${back}" aria-label="Back">${ic.back}</button>`:''}<h2>${title}</h2>${right}</div>`;
+const tabs = on => `<div class="tabs">
+  <button class="${on==='t'?'on':''}" data-go="home">${ic.tank}Tanks</button>
+  <button class="${on==='n'?'on':''}" data-go="notifications">${ic.bell.replace('width="18" height="18"','')}Alerts</button>
+  <button class="${on==='p'?'on':''}" data-go="profile">${ic.user}Profile</button></div>`;
+const syncPill = () => S.version > S.applied
+  ? `<span class="pill warn"><i></i>Sending to device…</span>`
+  : `<span class="pill ok"><i></i>Saved on device ✓</span>`;
+const statusPill = () => !S.online ? '<span class="pill bad"><i></i>Offline</span>'
+  : S.status==='WORK' ? '<span class="pill ok"><i></i>Online · WORK</span>' : `<span class="pill bad"><i></i>${S.status}</span>`;
+
+function tankSVG(){
+  const p = pct(), H=230, top=16, inner=H-top-8;
+  const cutY = top + inner * (S.cutoff / S.tankHeight);
+  const fullH = inner * (1 - S.cutoff / S.tankHeight);
+  const waterTop = top + inner - fullH * p / 100;
+  return `<svg viewBox="0 0 220 ${H}" width="100%" style="max-width:240px;display:block;margin:0 auto" role="img" aria-label="Tank ${p}% full">
+    <defs><linearGradient id="wg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--water-2)"/><stop offset="1" stop-color="var(--water)"/></linearGradient></defs>
+    <rect x="40" y="${top}" width="120" height="${inner}" rx="14" fill="var(--card)" stroke="var(--line)" stroke-width="2"/>
+    <clipPath id="tc"><rect x="41" y="${top+1}" width="118" height="${inner-2}" rx="13"/></clipPath>
+    <rect clip-path="url(#tc)" x="40" y="${waterTop}" width="120" height="${top+inner-waterTop}" fill="url(#wg)" style="transition:y .6s,height .6s"/>
+    <line x1="34" x2="166" y1="${cutY}" y2="${cutY}" stroke="var(--bad)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <text x="168" y="${cutY+4}" font-size="10" fill="var(--bad)" font-family="IBM Plex Mono, monospace">cutoff</text>
+    <text x="168" y="${cutY+16}" font-size="10" fill="var(--bad)" font-family="IBM Plex Mono, monospace">${S.cutoff} cm</text>
+    <rect x="88" y="${top-12}" width="24" height="10" rx="2" fill="var(--muted)"/>
+    <line x1="100" x2="100" y1="${top}" y2="${waterTop}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="2 3"/>
+    <text x="8" y="${(top+waterTop)/2+4}" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">${S.distance} cm</text>
+  </svg>`;
+}
+
+const SCREENS = {
+// ---------------- customer app
+login:{grp:'app',n:'01',t:'Login',why:'Phone + password or Google. On success the app stores both tokens and registers its push token.',
+ api:['1.4','1.5','2.6','1.6'],
+ r:()=>`<div class="body">
+  <div class="brand">${ic.tank.replace('<svg','<svg width="48" height="48" style="color:var(--water)"')}<b>Water Tank</b><span class="muted small">Watch and control your tank from anywhere</span></div>
+  <div><label class="lbl" for="lp">Phone number</label><input id="lp" class="inp" value="+91 98765 43210"></div>
+  <div><label class="lbl" for="lpw">Password</label><input id="lpw" class="inp" type="password" value="secret12"></div>
+  <div style="text-align:right"><a href="#app-forgot" class="small" style="color:var(--water)">Forgot password?</a></div>
+  <button class="btn" data-go="home" data-api="1.4">Log in</button>
+  <div class="divider">or</div>
+  <button class="btn ghost row" style="justify-content:center;display:flex;gap:10px" data-go="home" data-api="1.5">${ic.g} Continue with Google</button>
+  <p class="small muted" style="text-align:center;margin:auto 0 0">New here? <a href="#app-signup" style="color:var(--water)">Create an account</a></p></div>`},
+signup:{grp:'app',n:'02',t:'Sign up + verify phone',why:'Account is created first, then the phone is confirmed with a 6 digit SMS code. Login is refused until the phone is verified.',
+ api:['1.1','1.2','1.3'],
+ r:()=>`<div class="body">${hdr('Create account','login')}
+  <div><label class="lbl" for="sn">Full name</label><input id="sn" class="inp" value="Devv"></div>
+  <div><label class="lbl" for="sp">Phone number</label><input id="sp" class="inp" value="+91 98765 43210"></div>
+  <div><label class="lbl" for="spw">Password</label><input id="spw" class="inp" type="password" value="secret12"><span class="small muted">At least 8 characters</span></div>
+  <button class="btn" data-api="1.1">Send code</button>
+  <div class="card"><b>Enter the code sent to +91 98765 43210</b>
+   <div class="otp" style="margin:12px 0"><span>4</span><span>8</span><span>1</span><span class="f">2</span><span></span><span></span></div>
+   <div class="between small"><span class="muted">Resend in 0:24</span><button class="btn sm ghost" data-api="1.2">Resend</button></div></div>
+  <button class="btn" data-go="home" data-api="1.3">Verify and continue</button></div>`},
+forgot:{grp:'app',n:'03',t:'Forgot password',why:'SMS code proves the phone, the backend returns a 10 minute reset token, then the new password is saved and every phone is logged out.',
+ api:['1.2','1.3','1.9'],
+ r:()=>`<div class="body">${hdr('Reset password','login')}
+  <div><label class="lbl" for="fp">Phone number</label><input id="fp" class="inp" value="+91 98765 43210"></div>
+  <button class="btn ghost" data-api="1.2">Send code</button>
+  <div><label class="lbl">Code</label><div class="otp"><span>7</span><span>0</span><span>3</span><span>9</span><span>1</span><span class="f">5</span></div></div>
+  <div><label class="lbl" for="fnp">New password</label><input id="fnp" class="inp" type="password" value="newsecret"></div>
+  <button class="btn" data-go="login" data-api="1.3,1.9">Save new password</button></div>`},
+home:{grp:'app',n:'04',t:'My tanks',why:'One call loads every tank the user owns or was given, with its last state. Then the socket keeps the cards live. Pending invites show as a banner.',
+ api:['3.1','7.6','7.7','7.8','ws.sub','ws.state'],
+ r:()=>`<div class="body">
+  <div class="ah"><h2>My tanks</h2><button class="ico" data-go="notifications" aria-label="Notifications">${ic.bell}<span class="dot"></span></button><button class="ico" data-go="claim" aria-label="Add tank">${ic.plus}</button></div>
+  ${S.invite?`<div class="banner info"><div style="flex:1"><b>Ravi shared “Farm Tank” with you</b><div class="small muted">You can view and switch the pump</div>
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="inviteYes" data-api="7.7">Accept</button><button class="btn sm ghost" data-act="inviteNo" data-api="7.8">Decline</button></div></div></div>`:''}
+  <div class="card tankcard" data-go="tank" tabindex="0"><div class="minitank"><div class="w" style="height:${pct()}%"></div></div>
+   <div><div class="between"><b>Home Tank</b>${S.online?'<span class="pill ok"><i></i>Online</span>':'<span class="pill bad"><i></i>Offline</span>'}</div>
+   <div class="big" style="font-size:30px;margin:4px 0">${pct()}<small>%</small> <span class="small muted" style="font-family:var(--body);letter-spacing:0">${S.distance} cm</span></div>
+   <div class="small muted">Pump ${S.pumpOn?'<b style="color:var(--ok)">ON</b>':'OFF'} · Roof · Owner</div></div></div>
+  <div class="card tankcard" data-go="tank" tabindex="0"><div class="minitank"><div class="w" style="height:18%"></div></div>
+   <div><div class="between"><b>Shop Tank</b><span class="pill warn"><i></i>Low</span></div>
+   <div class="big" style="font-size:30px;margin:4px 0">18<small>%</small> <span class="small muted" style="font-family:var(--body);letter-spacing:0">131.0 cm</span></div>
+   <div class="small muted">Pump OFF · Market Road · Control</div></div></div>
+  <div class="card tankcard" tabindex="0"><div class="minitank"><div class="w" style="height:0"></div></div>
+   <div><div class="between"><b>Village Tank</b><span class="pill bad"><i></i>Offline 2 h</span></div>
+   <div class="big" style="font-size:30px;margin:4px 0;color:var(--muted)">–</div>
+   <div class="small muted">Last seen 10:42 · View only</div></div></div>
+ </div>${tabs('t')}`},
+claim:{grp:'app',n:'05',t:'Add tank (scan QR)',why:'The QR on the sticker holds WT1:<serial>:<claimCode>. The app checks it first, so the user sees the serial before confirming. A code typed by hand works the same.',
+ api:['3.2'],
+ r:()=>`<div class="body">${hdr('Add a tank','home')}
+  <div class="scanner"><div class="box"><div class="beam"></div></div></div>
+  <p class="small muted" style="margin:0;text-align:center">Point the camera at the QR sticker on the box or the device</p>
+  <div class="divider">or type it</div>
+  <div class="row"><input class="inp" id="cs" value="WT-2026-00001" aria-label="Serial"><input class="inp" id="cc" value="K7P2-9XQM" aria-label="Claim code"></div>
+  <button class="btn" data-go="claim2" data-api="3.2">Continue</button></div>`},
+claim2:{grp:'app',n:'06',t:'Name the new tank',why:'Claiming sets the owner. The claim code is wiped so nobody else can add this tank. Tank height is optional: without it the app shows cm only, no %.',
+ api:['3.3','4.2'],
+ r:()=>`<div class="body">${hdr('Tank found','claim')}
+  <div class="card row"><span class="pill ok"><i></i>Available</span><div><b class="mono">WT-2026-00001</b><div class="small muted">WT-ESP8266-HC12 · main + sender board</div></div></div>
+  <div><label class="lbl" for="cn">Tank name</label><input id="cn" class="inp" value="Home Tank"></div>
+  <div><label class="lbl" for="cl">Location</label><input id="cl" class="inp" value="Roof"></div>
+  <div class="row"><div style="flex:1"><label class="lbl" for="ch">Tank height (cm)</label><input id="ch" class="inp" value="180"></div>
+   <div style="flex:1"><label class="lbl" for="ccap">Capacity (L)</label><input id="ccap" class="inp" value="1000"></div></div>
+  <p class="small muted" style="margin:0">Height is measured from the sensor to the tank bottom. You can set it later.</p>
+  <button class="btn" data-go="tank" data-api="3.3">Add to my account</button>
+  <div class="banner warn small"><div>If the code was already used you see: <b>This tank already belongs to another account. Contact support.</b></div></div></div>`},
+tank:{grp:'app',n:'07',t:'Tank live view',why:'Detail is loaded once, then every change arrives on the socket. The pump button sends a command and waits for the ESP to confirm before flipping.',
+ api:['3.4','5.1','ws.sub','ws.state','ws.cmd','ws.run','mq.cmd'],
+ r:()=>`<div class="body">${hdr('Home Tank','home',`<button class="ico" data-go="tank-settings" aria-label="Tank settings">${ic.gear}</button>`)}
+  <div class="between">${statusPill()}<span class="small muted">Updated 2 s ago</span></div>
+  ${tankSVG()}
+  <div style="text-align:center"><div class="big">${pct()}<small>%</small></div><div class="muted small">${S.distance} cm from sensor · about ${Math.round(pct()*10)} L</div></div>
+  <button class="pumpbtn ${S.pumpOn?'on':''} ${S.busy?'busy':''}" data-act="pump" data-api="5.1">
+   <div style="text-align:left"><b style="font-size:16px">Pump ${S.busy?'…':S.pumpOn?'ON':'OFF'}</b><div class="small muted">${S.busy?'Waiting for device':S.pumpOn?'Running 4 min · started from app by Devv':'Auto cutoff at '+S.cutoff+' cm'}</div></div><span class="sw"></span></button>
+  <div class="stats"><div><b>${S.autoMode?'On':'Off'}</b><span>Auto mode</span></div><div><b>2</b><span>Timers</span></div><div><b>38 min</b><span>Pump today</span></div></div>
+  <div class="list card" style="padding:4px 14px">
+   <button data-go="timers">Timers <span class="muted">06:00, 18:00 ›</span></button>
+   <button data-go="history">Pump log and activity <span class="muted">›</span></button>
+   <button data-go="share">Shared with <span class="muted">2 people ›</span></button>
+   <button data-go="alerts">My alerts for this tank <span class="muted">›</span></button></div>
+ </div>`},
+'tank-settings':{grp:'app',n:'08',t:'Tank settings (cutoff)',why:'Only the owner can change these. Saving bumps the version and the backend sends it to the ESP over MQTT. The badge turns green when the ESP saves it in EEPROM and replies with the same version.',
+ api:['4.1','4.2','ws.sync','mq.set','3.5','4.3','3.6'],
+ r:()=>{const low=S.cutoffDraft<25, out=S.cutoffDraft>=S.tankHeight;
+ return `<div class="body">${hdr('Tank settings','tank')}
+  <div class="card"><div class="between"><b>Auto cutoff distance</b>${syncPill()}</div>
+   <p class="small muted" style="margin:6px 0 10px">The pump turns OFF when water comes this close to the sensor. Minimum 25 cm.</p>
+   <div class="row"><input type="range" id="cut" min="20" max="80" step="1" value="${S.cutoffDraft}" aria-label="Cutoff cm"><b class="mono" id="cutv" style="min-width:58px;text-align:right">${S.cutoffDraft} cm</b></div>
+   ${low?'<div class="small" style="color:var(--bad);margin-top:6px">Cutoff must be at least 25 cm. The sensor can’t read closer than that.</div>':''}
+   ${out?'<div class="small" style="color:var(--bad);margin-top:6px">Cutoff must be less than the tank height.</div>':''}
+   <button class="btn" style="margin-top:12px;${low||out||S.cutoffDraft===S.cutoff?'opacity:.45;pointer-events:none':''}" data-act="saveCut" data-api="4.2">Save</button>
+   <div class="small muted" style="margin-top:8px">Version ${S.version} · ${S.version>S.applied?'device has not confirmed yet':'confirmed by the device'}</div></div>
+  <div class="card list" style="padding:4px 14px">
+   <div class="between"><span>Tank height</span><b class="mono">${S.tankHeight} cm</b></div>
+   <div class="between"><span>Capacity</span><b class="mono">1000 L</b></div>
+   <div class="between"><span>Auto mode</span><button class="toggle ${S.autoMode?'on':''}" data-act="auto" data-api="4.2" aria-label="Auto mode"></button></div>
+   <div class="between"><span>Max pump run</span><b class="mono">${S.maxMin} min</b></div>
+   <div class="between"><span>Name / location</span><span class="muted">Home Tank · Roof ›</span></div>
+   <div class="between"><span>Change history</span><span class="muted small">25 → 35 cm by Devv, 31 Oct ›</span></div></div>
+  <button class="btn danger" data-act="remove" data-api="3.6">Remove tank from my account</button>
+  ${S.removeSheet?`<div class="scrim" data-act="remove"></div><div class="sheet"><b style="font-size:17px">Remove Home Tank?</b><p class="small muted" style="margin:0">Everyone you shared it with loses access. To add it again you will need a new code from support.</p><button class="btn danger" data-act="remove" data-go="home" data-api="3.6">Remove</button><button class="btn ghost" data-act="remove">Keep</button></div>`:''}
+ </div>`}},
+timers:{grp:'app',n:'09',t:'Timers',why:'Daily start and stop times run on the server every minute. The ESP auto cutoff still stops the pump early if the tank fills first.',
+ api:['6.1','6.2','6.3','6.4'],
+ r:()=>`<div class="body">${hdr('Timers','tank',`<button class="ico" data-act="timer" aria-label="Add timer">${ic.plus}</button>`)}
+  ${S.timers.map((t,i)=>`<div class="card"><div class="between"><div><b class="mono" style="font-size:18px">${t.start} → ${t.stop}</b><div class="small muted">${t.name}${t.below?` · only if below ${t.below}%`:''}</div></div>
+   <button class="toggle ${t.on?'on':''}" data-act="tt${i}" data-api="6.3" aria-label="Enable timer"></button></div>
+   <div class="days" style="margin-top:10px">${'MTWTFSS'.split('').map((d,j)=>`<span class="${t.days[j]?'on':''}">${d}</span>`).join('')}</div></div>`).join('')}
+  <div class="small muted">Next run: today 18:00. Last skipped: yesterday 06:00, tank already 96% full.</div>
+  ${S.timerSheet?`<div class="scrim" data-act="timer"></div><div class="sheet"><b style="font-size:17px">New timer</b>
+   <div class="row"><div style="flex:1"><label class="lbl" for="ts">Pump ON</label><input id="ts" class="inp" type="time" value="21:00"></div><div style="flex:1"><label class="lbl" for="tp">Pump OFF</label><input id="tp" class="inp" type="time" value="21:15"></div></div>
+   <div class="days">${'MTWTFSS'.split('').map(d=>`<span class="on">${d}</span>`).join('')}</div>
+   <div><label class="lbl" for="tb">Only start if the tank is below</label><select id="tb" class="inp"><option>Always start</option><option selected>50%</option><option>30%</option></select></div>
+   <button class="btn" data-act="addTimer" data-api="6.2">Save timer</button></div>`:''}
+ </div>`},
+share:{grp:'app',n:'10',t:'Share with family',why:'Owner invites by phone number. If that phone already has an account the invite appears in their app; otherwise they get an SMS and it is accepted after sign up.',
+ api:['7.1','7.2','7.3','7.4','7.5'],
+ r:()=>`<div class="body">${hdr('Shared with','tank',`<button class="ico" data-act="share" aria-label="Invite">${ic.plus}</button>`)}
+  <div class="card list" style="padding:4px 14px">
+   <div class="between"><div><b>Devv</b><div class="small muted">+91 98765 43210</div></div><span class="pill info">Owner</span></div>
+   <div class="between"><div><b>Asha</b><div class="small muted">+91 99887 76655</div></div><div class="seg" style="width:140px"><button class="on" data-api="7.4">Control</button><button data-api="7.4">View</button></div></div>
+   <div class="between"><div><b>Papa</b><div class="small muted">+91 90000 11122</div></div><div class="seg" style="width:140px"><button data-api="7.4">Control</button><button class="on" data-api="7.4">View</button></div></div>
+   <div class="between"><div><b>+91 91234 56789</b><div class="small muted">Invite sent · expires in 6 days</div></div><button class="btn sm danger" data-api="7.3">Cancel</button></div></div>
+  <div class="small muted"><b>View</b> sees level and history. <b>Control</b> can also switch the pump and edit timers. Only the owner changes settings and sharing.</div>
+  ${S.shareSheet?`<div class="scrim" data-act="share"></div><div class="sheet"><b style="font-size:17px">Invite someone</b>
+   <div><label class="lbl" for="ip">Phone number</label><input id="ip" class="inp" value="+91 91234 56789"></div>
+   <div class="seg"><button data-api="7.2">View</button><button class="on" data-api="7.2">Control</button></div>
+   <button class="btn" data-act="share" data-api="7.2">Send invite</button></div>`:''}
+ </div>`},
+history:{grp:'app',n:'11',t:'Pump log and activity',why:'Pump runs come from pump_runs (one row per ON→OFF). The chart is run time per day, so no level history is needed. Activity is device_events.',
+ api:['8.2','8.1','8.3','ws.run','ws.event'],
+ r:()=>`<div class="body">${hdr('History','tank')}
+  <div class="seg"><button class="${S.histTab==='runs'?'on':''}" data-act="hr" data-api="8.1">Pump log</button><button class="${S.histTab==='ev'?'on':''}" data-act="he" data-api="8.3">Activity</button></div>
+  ${S.histTab==='runs'?`<div class="card"><div class="between"><b>Run time, last 7 days</b><span class="small muted">4 h 12 m</span></div>
+   <div class="chart" style="margin:14px 0 20px">${[34,52,28,61,40,0,38].map((v,i)=>`<div style="height:${v/61*100}%"><span>${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}</span></div>`).join('')}</div></div>
+   <div class="card list" style="padding:4px 14px">
+   ${[['Today 18:00','18 min','Timer “Evening top-up”','Auto cutoff at 35 cm','42 → 95%'],['Today 07:12','20 min','App · Devv','App · Devv','30 → 78%'],['Yesterday 21:40','6 min','Button on device','Button','61 → 72%'],['Yesterday 06:00','—','Timer “Morning fill”','Skipped, tank 96%','']]
+    .map(r=>`<div><div class="between"><b>${r[0]}</b><span class="mono">${r[1]}</span></div><div class="small muted">Started: ${r[2]} · Stopped: ${r[3]}${r[4]?' · '+r[4]:''}</div></div>`).join('')}</div>`
+  :`<div class="card list" style="padding:4px 14px">
+   ${[['bad','Sender board not in range (FAULT)','Today 14:03 · cleared 14:06'],['ok','Auto cutoff at 35 cm','Today 18:18'],['info','Settings saved on device (v4)','31 Oct 19:10'],['warn','Went offline','31 Oct 02:15 · back 02:21'],['info','Rebooted (power)','31 Oct 02:21'],['info','Firmware 1.3 installed','28 Oct 11:00']]
+    .map(e=>`<div class="ev"><i style="background:var(--${e[0]==='info'?'water':e[0]})"></i><div><b>${e[1]}</b><div class="small muted">${e[2]}</div></div></div>`).join('')}</div>`}
+ </div>`},
+notifications:{grp:'app',n:'12',t:'Notifications',why:'In-app list of everything that was pushed. Opening the screen marks them read.',
+ api:['9.1','9.2','ws.notif'],
+ r:()=>`<div class="body">${hdr('Alerts','',`<button class="btn sm ghost" data-api="9.2">Mark all read</button>`)}
+  ${[['bad','Home Tank: sensor fault','Sender board not in range. Pump stopped for safety.','14:03',1],['ok','Home Tank is full','Auto cutoff stopped the pump at 95%.','18:18',1],['warn','Shop Tank is low','Level is 18%, below your 20% alert.','11:20',0],['bad','Village Tank is offline','No data for 30 minutes.','Yesterday',0]]
+   .map(n=>`<div class="card" style="${n[4]?'border-color:var(--water)':''}"><div class="between"><b>${n[1]}</b><span class="small muted">${n[3]}</span></div><div class="small muted" style="margin-top:4px">${n[2]}</div></div>`).join('')}
+ </div>${tabs('n')}`},
+alerts:{grp:'app',n:'13',t:'Alert settings',why:'Each person sets their own alerts per tank. No saved row means the default (on).',
+ api:['9.3','9.4'],
+ r:()=>`<div class="body">${hdr('My alerts','tank')}
+  <div class="card list" style="padding:4px 14px">
+  ${[['Tank full','at 95%',1],['Tank low','below 20%',1],['Sensor fault','right away',1],['Device offline','after 30 min',1],['Pump running long','over 60 min',0],['Firmware update result','',0]]
+   .map(a=>`<div class="between"><div><b>${a[0]}</b>${a[1]?`<div class="small muted">${a[1]}</div>`:''}</div><button class="toggle ${a[2]?'on':''}" data-api="9.4" data-act="tg" aria-label="${a[0]}"></button></div>`).join('')}</div>
+  <div class="card between"><div><b>Quiet hours</b><div class="small muted">No push between these times</div></div><span class="mono">22:00–06:00</span></div>
+  <button class="btn" data-go="tank" data-api="9.4">Save</button></div>`},
+profile:{grp:'app',n:'14',t:'Profile',why:'Account, password, logged-in phones and logout.',
+ api:['2.1','2.2','2.3','2.8','1.7','1.8','2.10'],
+ r:()=>`<div class="body">${hdr('Profile','')}
+  <div class="card row"><div style="width:48px;height:48px;border-radius:50%;background:var(--water-soft);display:grid;place-items:center;font-weight:700;color:var(--water)">D</div><div><b>Devv</b><div class="small muted">+91 98765 43210 · Google not linked</div></div></div>
+  <div class="card list" style="padding:4px 14px">
+   <button data-api="2.2">Edit name and email <span class="muted">›</span></button>
+   <button data-api="2.3">Change password <span class="muted">›</span></button>
+   <button data-api="2.8">Logged-in phones <span class="muted">2 ›</span></button>
+   <button data-api="1.8">Log out of all phones <span class="muted">›</span></button></div>
+  <button class="btn ghost" data-go="login" data-api="1.7">Log out</button>
+  <button class="btn danger" data-api="2.10">Delete my account</button></div>${tabs('p')}`},
+
+// ---------------- admin
+dashboard:{grp:'adm',n:'A1',t:'Dashboard',why:'One query on the admin_stats view, plus open faults. Tiles stay live over the admin socket room.',
+ api:['10.1','10.2','ws.stats']},
+devices:{grp:'adm',n:'A2',t:'Devices',why:'Search matches serial, either MAC (with or without colons), owner name or phone. Filters by status, online and firmware.',
+ api:['10.3']},
+register:{grp:'adm',n:'A3',t:'Register device',why:'Enter both MACs during manufacturing. The device secret (flashed into the ESP) and claim code (printed in the QR) are shown only once, because only their hashes are stored.',
+ api:['10.4','10.5']},
+device:{grp:'adm',n:'A4',t:'Device detail',why:'Everything about one tank for support: boards, owner, members, live state, commands and history.',
+ api:['10.6','10.13','10.8','10.9','10.10','10.11','10.12','10.7','mq.cmd']},
+users:{grp:'adm',n:'A5',t:'Users',why:'Search customers, see what they own, block or force logout. Blocking bumps token_version so their app is logged out at once.',
+ api:['10.16','10.17','10.18','10.19','10.20']},
+ota:{grp:'adm',n:'A6',t:'Firmware and OTA',why:'Upload a .bin from the panel instead of SSH. Push to one device, devices below a version, or all. Progress comes back from each ESP over MQTT.',
+ api:['10.22','10.23','10.24','10.26','10.28','10.29','ws.ota','mq.ota']},
+audit:{grp:'adm',n:'A7',t:'Audit log',why:'Every admin write is recorded: who, what, when, from which IP.',
+ api:['10.31']},
+};
+
+// ---------------- admin content
+const devRows = [
+ ['WT-2026-00001','A4:CF:12:9B:3E:01','84:F3:EB:20:11:7A','Devv','+91 98765 43210','ok','WORK','1.3','71%'],
+ ['WT-2026-00002','A4:CF:12:9B:3E:22','84:F3:EB:20:11:9C','Ravi Kumar','+91 99001 22334','bad','FAULT','1.3','—'],
+ ['WT-2026-00003','A4:CF:12:9B:40:05','84:F3:EB:20:12:04','Meena S','+91 98450 11223','off','Offline 2 h','1.2','—'],
+ ['WT-2026-00004','A4:CF:12:9B:40:18','84:F3:EB:20:12:11','Not claimed','','info','UNKNOWN','1.3','—'],
+ ['WT-2026-00005','A4:CF:12:9B:41:7D','84:F3:EB:20:13:3A','Arjun P','+91 97000 55660','ok','WORK','1.3','44%'],
+];
+const pill = (k,t) => `<span class="pill ${k==='off'?'bad':k}"><i></i>${t}</span>`;
+const ADM = {
+ dashboard:()=>`<h2>Dashboard</h2>
+  <div class="tiles"><div class="tile"><span>Total devices</span><b>128</b><em class="muted">112 claimed</em></div>
+   <div class="tile"><span>Online now</span><b>97</b><em style="color:var(--ok)">87% of claimed</em></div>
+   <div class="tile"><span>Faulty</span><b style="color:var(--bad)">6</b><em class="muted">FAULT or DOWN</em></div>
+   <div class="tile"><span>Active users</span><b>143</b><em class="muted">121 in last 30 days</em></div></div>
+  <div class="two"><div class="tile"><b style="font-size:15px;margin-bottom:10px">Firmware on main boards</b>
+    <div class="bar"><i style="width:78%;background:var(--water)"></i><i style="width:19%;background:var(--water-2)"></i><i style="width:3%;background:var(--line)"></i></div>
+    <div class="small muted" style="margin-top:8px">1.3 · 100 devices &nbsp; 1.2 · 24 &nbsp; unknown · 4</div></div>
+   <div class="tile"><b style="font-size:15px;margin-bottom:6px">Open faults</b>
+    <div class="list small">${[['WT-2026-00002','Sender not in range','12 min'],['WT-2026-00019','Ultrasonic no echo (DOWN)','1 h'],['WT-2026-00031','Offline','3 h']].map(r=>`<div class="between"><span class="mono">${r[0]}</span><span>${r[1]}</span><span class="muted">${r[2]}</span></div>`).join('')}</div></div></div>`,
+ devices:()=>`<div class="between"><h2>Devices</h2><button class="btn sm" data-adm="register">Register device</button></div>
+  <div class="toolbar"><input class="inp" id="dq" placeholder="Search serial, MAC, owner or phone" value="${S.devQ}" data-api="10.3"><select aria-label="Status"><option>All status</option><option>WORK</option><option>FAULT</option><option>DOWN</option><option>Offline</option></select><select aria-label="Claimed"><option>Claimed + unclaimed</option><option>Unclaimed only</option></select><select aria-label="Firmware"><option>Any firmware</option><option>1.3</option><option>1.2</option></select></div>
+  <div class="tbl"><table><thead><tr><th>Serial</th><th>Main MAC</th><th>Sender MAC</th><th>Owner</th><th>Status</th><th>FW</th><th>Level</th></tr></thead><tbody>
+  ${devRows.filter(r=>!S.devQ||r.join(' ').toLowerCase().replace(/:/g,'').includes(S.devQ.toLowerCase().replace(/:/g,''))).map(r=>`<tr class="click" data-adm="device" data-api="10.6"><td class="mono">${r[0]}</td><td class="mono">${r[1]}</td><td class="mono">${r[2]}</td><td>${r[3]}<div class="small muted">${r[4]}</div></td><td>${pill(r[5],r[6])}</td><td class="mono">${r[7]}</td><td class="mono">${r[8]}</td></tr>`).join('')}
+  </tbody></table></div><div class="small muted">Showing 5 of 128</div>`,
+ register:()=>`<h2>Register device</h2>
+  <div class="two"><div class="tile" style="display:flex;flex-direction:column;gap:12px">
+   <div><label class="lbl" for="rm">Main relay board MAC</label><input id="rm" class="inp mono" value="A4:CF:12:9B:42:10"></div>
+   <div><label class="lbl" for="rs">Sender (ultrasonic) board MAC</label><input id="rs" class="inp mono" value="84:F3:EB:20:14:5B"></div>
+   <div class="row"><div style="flex:1"><label class="lbl" for="rh">Hardware model</label><input id="rh" class="inp" value="WT-ESP8266-HC12"></div><div style="flex:1"><label class="lbl" for="rd">Made on</label><input id="rd" class="inp" type="date" value="2026-11-01"></div></div>
+   ${S.regErr?`<div class="small" style="color:var(--bad)">${S.regErr}</div>`:''}
+   <button class="btn" data-act="reg" data-api="10.4">Register and make QR</button>
+   <button class="btn ghost" data-api="10.5">Upload CSV of many MAC pairs</button>
+   <div class="small muted">The serial number is given automatically: WT-2026-00129.</div></div>
+  <div class="tile" style="display:flex;flex-direction:column;gap:12px">${S.reg?`
+   <div class="between"><b style="font-size:15px">Registered</b>${pill('ok','WT-2026-00129')}</div>
+   <div class="qrbox"><div class="sticker"><div id="qr"></div><div style="font-family:var(--mono);font-size:11px;line-height:1.5"><b style="font-size:13px">WT-2026-00129</b><br>Code: ${S.reg.code}<br>Scan in the Water Tank app</div></div></div>
+   <div class="secret"><b>Device secret, shown once.</b> Flash it into the main board now. It can’t be shown again; rotating makes a new one.<div class="mono" style="margin-top:6px;word-break:break-all">${S.reg.secret}</div></div>
+   <dl class="kv"><dt>MQTT user</dt><dd class="mono">a4cf129b4210</dd><dt>QR text</dt><dd class="mono">WT1:WT-2026-00129:${S.reg.code}</dd></dl>
+   <div class="row"><button class="btn sm ghost">Copy secret</button><button class="btn sm ghost">Download sticker PNG</button></div>`
+   :`<b style="font-size:15px">Sticker preview</b><p class="muted small" style="margin:0">After you register, the QR sticker and the one-time device secret appear here.</p>
+     <div class="small muted">Errors you may see: <b>This MAC is already registered to WT-2026-00031</b>, or <b>MAC must look like A4:CF:12:9B:42:10</b>.</div>`}</div></div>`,
+ device:()=>`<div class="between"><h2><span class="mono" style="font-size:20px">WT-2026-00001</span> · Home Tank</h2>${pill('ok','Online · WORK')}</div>
+  <div class="two"><div class="tile"><dl class="kv">
+   <dt>Owner</dt><dd>Devv · +91 98765 43210</dd><dt>Shared</dt><dd>Asha (control), Papa (view)</dd>
+   <dt>Main board</dt><dd class="mono">A4:CF:12:9B:3E:01 · fw 1.3</dd><dt>Sender board</dt><dd class="mono">84:F3:EB:20:11:7A</dd>
+   <dt>Live</dt><dd>71% · 62.4 cm · pump OFF · RSSI −61</dd><dt>Settings</dt><dd>Cutoff 35 cm · height 180 cm · v4 applied</dd>
+   <dt>Registered</dt><dd>12 Oct 2026 · claimed 14 Oct</dd></dl></div>
+   <div class="tile" style="display:flex;flex-direction:column;gap:8px"><b style="font-size:15px">Actions</b>
+    <div class="row" style="flex-wrap:wrap"><button class="btn sm" data-api="10.13">Pump ON</button><button class="btn sm ghost" data-api="10.13">Pump OFF</button><button class="btn sm ghost" data-api="10.13">Reboot</button><button class="btn sm ghost" data-api="10.13">Config mode</button><button class="btn sm ghost" data-api="10.13">Check OTA</button></div>
+    <div class="row" style="flex-wrap:wrap"><button class="btn sm ghost" data-api="10.8">New claim code / QR</button><button class="btn sm ghost" data-api="10.9">Rotate secret</button><button class="btn sm ghost" data-api="10.12">Replace board</button></div>
+    <div class="row" style="flex-wrap:wrap"><button class="btn sm ghost" data-api="10.11">Transfer owner</button><button class="btn sm danger" data-api="10.10">Remove owner</button><button class="btn sm danger" data-api="10.7">Disable device</button></div></div></div>
+  <div class="tbl"><table><thead><tr><th>Time</th><th>Event</th><th>Detail</th></tr></thead><tbody>
+   <tr><td class="mono">Today 18:18</td><td>${pill('ok','auto_cutoff')}</td><td>35 cm reached, pump off</td></tr>
+   <tr><td class="mono">Today 14:03</td><td>${pill('bad','sender_fault')}</td><td>Cleared after 3 min</td></tr>
+   <tr><td class="mono">31 Oct 19:10</td><td>${pill('info','settings_applied')}</td><td>v4, cutoff 25 → 35 cm by Devv</td></tr></tbody></table></div>`,
+ users:()=>`<h2>Users</h2>
+  <div class="toolbar"><input class="inp" placeholder="Search name, phone or email" data-api="10.16"><select aria-label="State"><option>All</option><option>Blocked</option><option>Super admins</option></select></div>
+  <div class="tbl"><table><thead><tr><th>Name</th><th>Phone</th><th>Login</th><th>Tanks</th><th>Last login</th><th>State</th><th></th></tr></thead><tbody>
+  ${[['Devv','+91 98765 43210','Phone','1 owned · 2 shared','Today','ok','Active'],['Ravi Kumar','+91 99001 22334','Google','2 owned','Yesterday','ok','Active'],['Meena S','+91 98450 11223','Phone','1 owned','12 days ago','ok','Active'],['Test Account','+91 90000 00000','Phone','0','3 months ago','bad','Blocked']]
+   .map(u=>`<tr class="click" data-api="10.17"><td>${u[0]}</td><td class="mono">${u[1]}</td><td>${u[2]}</td><td>${u[3]}</td><td>${u[4]}</td><td>${pill(u[5],u[6])}</td><td><button class="btn sm ${u[6]==='Blocked'?'ghost':'danger'}" data-api="${u[6]==='Blocked'?'10.19':'10.18'}">${u[6]==='Blocked'?'Unblock':'Block'}</button></td></tr>`).join('')}
+  </tbody></table></div>`,
+ ota:()=>`<div class="between"><h2>Firmware and OTA</h2><button class="btn sm" data-api="10.23">Upload .bin</button></div>
+  <div class="tbl"><table><thead><tr><th>Version</th><th>Board</th><th>Size</th><th>SHA-256</th><th>Devices on it</th><th></th></tr></thead><tbody>
+   <tr><td class="mono">1.4</td><td>main</td><td class="mono">498 KB</td><td class="mono">9f2c…e41a</td><td>0</td><td><button class="btn sm" data-act="push" data-api="10.26">Push update</button></td></tr>
+   <tr><td class="mono">1.3 ${pill('ok','stable')}</td><td>main</td><td class="mono">487 KB</td><td class="mono">a81d…07bc</td><td>100</td><td></td></tr>
+   <tr><td class="mono">1.2</td><td>main</td><td class="mono">471 KB</td><td class="mono">3c09…99d2</td><td>24</td><td><button class="btn sm ghost" data-api="10.24">Mark stable</button></td></tr></tbody></table></div>
+  <div class="tile" style="display:flex;flex-direction:column;gap:10px"><div class="between"><b style="font-size:15px">Rollout #3 · 1.4 to devices below 1.4</b><button class="btn sm danger" data-api="10.29">Cancel</button></div>
+   <div class="bar"><i style="width:58%;background:var(--ok)"></i><i style="width:9%;background:var(--water)"></i><i style="width:4%;background:var(--bad)"></i></div>
+   <div class="small muted">72 success · 11 downloading · 5 failed · 36 pending (offline devices get it when they reconnect)</div>
+   <div class="tbl"><table><thead><tr><th>Device</th><th>From</th><th>Status</th><th>Detail</th></tr></thead><tbody>
+    <tr><td class="mono">WT-2026-00001</td><td class="mono">1.3</td><td>${pill('ok','success')}</td><td>Rebooted on 1.4</td></tr>
+    <tr><td class="mono">WT-2026-00007</td><td class="mono">1.3</td><td>${pill('info','downloading')}</td><td>62%</td></tr>
+    <tr><td class="mono">WT-2026-00019</td><td class="mono">1.2</td><td>${pill('bad','failed')}</td><td>sha256 mismatch</td></tr></tbody></table></div></div>`,
+ audit:()=>`<h2>Audit log</h2>
+  <div class="tbl"><table><thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th><th>IP</th></tr></thead><tbody>
+  ${[['Today 20:02','Devv','device.register','WT-2026-00128'],['Today 19:40','Devv','ota.push','rollout #3 (1.4)'],['Today 11:15','Devv','user.block','Test Account'],['31 Oct 16:30','Devv','device.claim_code','WT-2026-00044'],['30 Oct 10:05','Devv','firmware.upload','main 1.4']]
+   .map(a=>`<tr><td class="mono">${a[0]}</td><td>${a[1]}</td><td class="mono">${a[2]}</td><td class="mono">${a[3]}</td><td class="mono">203.0.113.24</td></tr>`).join('')}</tbody></table></div>`,
+};
+
+// ------------------------------------------------------------------ render
+let cur = 'login';
+const $ = s => document.querySelector(s);
+function renderIndex(){
+  const g = (k,label) => `<div class="grp"><h2>${label}</h2>${Object.entries(SCREENS).filter(([,v])=>v.grp===k).map(([id,v])=>`<button data-nav="${id}" class="${cur===id?'on':''}"><span class="n">${v.n}</span>${v.t}</button>`).join('')}</div>`;
+  $('#index').innerHTML = g('app','Customer app') + g('adm','Admin panel (super admin)') +
+   `<div class="grp note"><h2>Always running</h2><div class="small muted" style="padding:0 10px">Socket.IO for live data, MQTT between backend and ESP. Full list in API.md sections 12 and 13.</div></div>`;
+}
+function renderApi(){
+  const s = SCREENS[cur];
+  const rest = s.api.filter(k=>!k.startsWith('ws.')&&!k.startsWith('mq.'));
+  const live = s.api.filter(k=>k.startsWith('ws.')||k.startsWith('mq.'));
+  const row = k => { const [m,p,r,d]=A[k]; return `<div class="call" data-k="${k}"><span class="m ${m}">${m}</span><span class="p">${/^\d/.test(k)?`<span class="no">${k}</span>`:''}${p}<span class="r">${r}</span></span><span class="d">${d}</span></div>`; };
+  $('#api').innerHTML = `<h3>${s.n} · ${s.t}</h3><p class="why">${s.why}</p>
+   <h4>REST calls</h4>${rest.map(row).join('')||'<div class="small muted">None</div>'}
+   ${live.length?`<h4>Live (Socket.IO / MQTT)</h4>${live.map(row).join('')}`:''}
+   <div class="tip">${s.grp==='app'?'Every app call sends <span class="mono">Authorization: Bearer &lt;accessToken&gt;</span> except public ones. A 401 triggers one silent <span class="mono">POST /auth/refresh</span>, then the call is retried.':'Admin calls need role super_admin. Every write is also saved in the audit log.'}</div>`;
+}
+function renderStage(){
+  const s = SCREENS[cur];
+  $('#layout').classList.toggle('admin', s.grp==='adm');
+  if (s.grp==='app'){
+    $('#stage').innerHTML = `<div class="phone"><div class="scr"><div class="sbar"><span>9:41</span><span>4G ▮▮▮ 82%</span></div>${s.r()}<div class="toast" id="toast" hidden></div></div></div>`;
+  } else {
+    const nav = Object.entries(SCREENS).filter(([,v])=>v.grp==='adm').map(([id,v])=>`<button data-adm="${id}" class="${cur===id?'on':''}">${v.t}</button>`).join('');
+    $('#stage').innerHTML = `<div class="browser"><div class="chrome"><div class="dots"><i></i><i></i><i></i></div><div class="url">admin.watertank.ecobridgers.com/${cur}</div></div>
+      <div class="adm"><aside><b>Water Tank<small>Super admin</small></b>${nav}</aside><main>${ADM[cur]()}</main></div></div>`;
+    if (cur==='register' && S.reg && window.QRCode){ try{ new QRCode(document.getElementById('qr'),{text:'WT1:WT-2026-00129:'+S.reg.code,width:232,height:232,correctLevel:QRCode.CorrectLevel.M}); }catch(e){} }
+  }
+}
+function render(){ renderIndex(); renderStage(); renderApi(); }
+function go(id){ if(!SCREENS[id]) return; cur=id; S.timerSheet=S.shareSheet=S.removeSheet=false; render();
+  const h = (SCREENS[id].grp==='app'?'app-':'admin-')+id; if (location.hash.slice(1)!==h) history.replaceState(null,'','#'+h); }
+function fire(keys){ keys.split(',').forEach(k=>{ const el=document.querySelector(`.call[data-k="${k}"]`); if(el){ el.classList.remove('fired'); void el.offsetWidth; el.classList.add('fired'); setTimeout(()=>el.classList.remove('fired'),1600);} }); }
+function toast(t){ const el=$('#toast'); if(!el) return; el.textContent=t; el.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>{el.hidden=true},2200); }
+
+document.addEventListener('click', e=>{
+  const nav = e.target.closest('[data-nav]'); if (nav){ go(nav.dataset.nav); return; }
+  const adm = e.target.closest('[data-adm]');
+  const act = e.target.closest('[data-act]');
+  const g = e.target.closest('[data-go]');
+  const apiEl = e.target.closest('[data-api]');
+  const apiKeys = apiEl && apiEl.dataset.api;
+  if (act){
+    const a = act.dataset.act;
+    if (a==='pump' && !S.busy){ S.busy=true; renderStage(); fire('5.1'); setTimeout(()=>fire('mq.cmd'),400);
+      setTimeout(()=>{ S.busy=false; S.pumpOn=!S.pumpOn; if(S.pumpOn) S.distance=Math.max(S.cutoff+2, S.distance-4); renderStage(); fire('ws.cmd'); setTimeout(()=>fire('ws.state'),300); toast(S.pumpOn?'Pump is ON. Device confirmed.':'Pump is OFF. Device confirmed.'); },1300); return; }
+    if (a==='saveCut'){ S.cutoff=S.cutoffDraft; S.version++; renderStage(); fire('4.2'); setTimeout(()=>fire('mq.set'),400);
+      setTimeout(()=>{ S.applied=S.version; if(cur==='tank-settings') renderStage(); fire('ws.sync'); toast('Saved on device ✓ The pump now stops at '+S.cutoff+' cm.'); },1800); return; }
+    if (a==='auto'){ S.autoMode=!S.autoMode; S.version++; renderStage(); fire('4.2'); setTimeout(()=>{S.applied=S.version; if(cur==='tank-settings') renderStage(); fire('ws.sync');},1500); return; }
+    if (a==='remove'){ S.removeSheet=!S.removeSheet; if(!g){ renderStage(); if(apiKeys) fire(apiKeys); return; } }
+    if (a==='timer'){ S.timerSheet=!S.timerSheet; renderStage(); return; }
+    if (a==='addTimer'){ S.timers.push({name:'Night',start:'21:00',stop:'21:15',days:[1,1,1,1,1,1,1],below:50,on:true}); S.timerSheet=false; renderStage(); fire('6.2'); toast('Timer saved'); return; }
+    if (a.startsWith('tt')){ const t=S.timers[+a.slice(2)]; t.on=!t.on; renderStage(); fire('6.3'); return; }
+    if (a==='share'){ const sending = act.classList.contains('btn'); S.shareSheet=!S.shareSheet; renderStage(); if(sending){fire('7.2'); toast('Invite sent to +91 91234 56789');} return; }
+    if (a==='hr'||a==='he'){ S.histTab=a==='hr'?'runs':'ev'; renderStage(); fire(apiKeys); return; }
+    if (a==='tg'){ act.classList.toggle('on'); fire('9.4'); return; }
+    if (a==='inviteYes'||a==='inviteNo'){ S.invite=false; renderStage(); fire(apiKeys); toast(a==='inviteYes'?'Farm Tank added to your list':'Invite declined'); return; }
+    if (a==='reg'){ const m=$('#rm').value.trim(), s=$('#rs').value.trim(), ok=/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
+      if(!ok.test(m)||!ok.test(s)){ S.regErr='MAC must look like A4:CF:12:9B:42:10'; S.reg=null; }
+      else if(m.toUpperCase()===s.toUpperCase()){ S.regErr='Main and sender MAC must be different'; S.reg=null; }
+      else { S.regErr=''; const r=n=>Array.from({length:n},()=> 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join(''); S.reg={code:r(4)+'-'+r(4),secret:r(32).toLowerCase()}; }
+      renderStage(); fire('10.4'); return; }
+    if (a==='push'){ fire('10.26'); setTimeout(()=>fire('mq.ota'),400); setTimeout(()=>fire('ws.ota'),900); return; }
+  }
+  if (adm){ go(adm.dataset.adm); if(apiKeys) setTimeout(()=>fire(apiKeys),50); return; }
+  if (g){ const k=apiKeys; go(g.dataset.go); if(k) setTimeout(()=>fire(k),50); return; }
+  if (apiKeys){ fire(apiKeys); }
+});
+document.addEventListener('change', e=>{ if (e.target.id==='cut'){ renderStage(); const n=$('#cut'); if(n) n.focus(); } });
+document.addEventListener('keydown', e=>{ if(e.key==='Enter'){ const c=e.target.closest('.tankcard[data-go]'); if(c) go(c.dataset.go); }});
+document.addEventListener('input', e=>{
+  if (e.target.id==='cut'){ S.cutoffDraft=+e.target.value; const v=$('#cutv'); if(v) v.textContent=S.cutoffDraft+' cm'; }
+  if (e.target.id==='dq'){ S.devQ=e.target.value; renderStage(); const n=$('#dq'); if(n){ n.focus(); n.setSelectionRange(n.value.length,n.value.length);} fire('10.3'); }
+});
+function fromHash(){ const h=location.hash.slice(1).replace(/^(app|admin)-/,''); if(SCREENS[h]) { cur=h; } render(); }
+window.addEventListener('hashchange', fromHash);
+fromHash();
+</script>
