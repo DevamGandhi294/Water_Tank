@@ -4,10 +4,10 @@
 //        npm run migrate:status   (list applied / pending)
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env'), quiet: true });
 const { Client } = require('pg');
 
-const MIGRATIONS_DIR = path.resolve(__dirname, '../../database/migrations');
+const MIGRATIONS_DIR = process.env.MIGRATIONS_DIR || path.resolve(__dirname, '../../database/migrations');
 
 async function main() {
   const statusOnly = process.argv.includes('--status');

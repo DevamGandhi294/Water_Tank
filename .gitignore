@@ -12,3 +12,4 @@ mosquitto/data/
 mosquitto/log/
 mosquitto/config/passwd
 .claude/settings.local.json
+backend/data/

@@ -1,0 +1,12 @@
+**/node_modules
+**/.env
+.env*
+.git
+**/dist
+**/build
+**/.dart_tool
+mobile/
+admin-panel/node_modules
+backend/data
+backend/test
+*.log

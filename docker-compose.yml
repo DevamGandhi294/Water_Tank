@@ -1,3 +1,7 @@
+# Local development stack (WSL + Docker).
+#   docker compose up -d --build        postgres, mosquitto, backend, pgadmin
+#   docker compose logs -f backend
+# Production uses docker-compose.prod.yml (see DEPLOY.md).
 name: waterlevel
 
 services:
@@ -20,15 +24,50 @@ services:
       retries: 10
 
   mosquitto:
-    image: eclipse-mosquitto:2
+    # Mosquitto 2.0.18 + go-auth plugin: logins and ACLs are checked by the backend
+    image: iegomez/mosquitto-go-auth:3.0.0-mosquitto_2.0.18
     restart: unless-stopped
     ports:
       - "${MQTT_PORT:-1883}:1883"
-      - "${MQTT_WS_PORT:-9001}:9001"
     volumes:
-      - ./mosquitto/config:/mosquitto/config
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_log:/mosquitto/log
+      - ./mosquitto/config/mosquitto.conf:/etc/mosquitto/mosquitto.conf:ro
+      - mosquitto_data:/var/lib/mosquitto
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      MQTT_URL: mqtt://mosquitto:1883
+      MQTT_BACKEND_USERNAME: ${MQTT_BACKEND_USERNAME:-wt-backend}
+      MQTT_BACKEND_PASSWORD: ${MQTT_BACKEND_PASSWORD:-dev-backend-mqtt-password}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me}
+      HASH_PEPPER: ${HASH_PEPPER:-dev-only-pepper-change-me}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8080}
+      SMS_PROVIDER: ${SMS_PROVIDER:-none}
+      DEV_ENDPOINTS: "true"
+      OTA_DIR: /srv/ota
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      RATE_LIMIT_SCALE: ${RATE_LIMIT_SCALE:-1}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      - ./backend/src:/app/backend/src
+      - ./backend/scripts:/app/backend/scripts
+      - ./backend/test:/app/backend/test
+      - ./database/migrations:/app/database/migrations:ro
+      - ota_files:/srv/ota
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -50,5 +89,5 @@ services:
 volumes:
   pgdata:
   mosquitto_data:
-  mosquitto_log:
   pgadmin_data:
+  ota_files:
