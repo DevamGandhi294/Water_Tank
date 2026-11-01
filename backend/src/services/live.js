@@ -273,6 +273,7 @@ async function handleEvent(e, p) {
         severity: 'warning',
         message: p.why === 'near' ? 'Pump ON refused: tank already full' : `Pump ON refused (${p.why || 'unknown'})`,
         data: { why: p.why || null },
+        oneOff: true,
       });
       break;
     case 'config_mode':

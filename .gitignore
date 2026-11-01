@@ -13,3 +13,15 @@ mosquitto/log/
 mosquitto/config/passwd
 .claude/settings.local.json
 backend/data/
+admin-panel/dist/
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/android/app/upload-keystore.jks
+mobile/ios/Pods/
+*.iml
+.idea/
+deploy/certs/

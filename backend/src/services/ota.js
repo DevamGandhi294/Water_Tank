@@ -77,6 +77,7 @@ async function finished(rolloutId, deviceId, ok, error, version) {
     severity: ok ? 'info' : 'warning',
     message: ok ? `Firmware ${version || ''} installed`.trim() : `Firmware update failed: ${error || 'unknown error'}`,
     data: { rolloutId, version, error },
+    oneOff: true,
   });
   await alerts.notify(deviceId, 'ota_result', {
     title: ok ? `${name} updated` : `${name} update failed`,
