@@ -382,8 +382,10 @@ router.get('/:id/pump-runs/summary', deviceAccess('view'), async (req, res) => {
      )
      SELECT to_char(b.local_start, CASE WHEN $3 = 'hour' THEN 'YYYY-MM-DD"T"HH24:00' ELSE 'YYYY-MM-DD' END) AS date,
             count(r.id)::int AS runs,
-            COALESCE(sum(EXTRACT(EPOCH FROM (LEAST(COALESCE(r.ended_at, now()), b.local_end AT TIME ZONE $2)
-                                     - GREATEST(r.started_at, b.local_start AT TIME ZONE $2)))), 0)::int AS total_s
+            -- r.id IS NULL = empty bucket (GREATEST/LEAST skip NULLs, so guard explicitly)
+            COALESCE(sum(CASE WHEN r.id IS NULL THEN 0 ELSE
+                       EXTRACT(EPOCH FROM (LEAST(COALESCE(r.ended_at, now()), b.local_end AT TIME ZONE $2)
+                                         - GREATEST(r.started_at, b.local_start AT TIME ZONE $2))) END), 0)::int AS total_s
        FROM b LEFT JOIN pump_runs r ON r.device_id = $1
             AND r.started_at < b.local_end AT TIME ZONE $2
             AND COALESCE(r.ended_at, now()) > b.local_start AT TIME ZONE $2

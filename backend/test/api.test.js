@@ -354,6 +354,9 @@ test('5. pump ON/OFF through MQTT, pump run log', async () => {
     assert.equal(r.status, 200);
     assert.equal(r.body.buckets.length, { day: 24, week: 7, month: 30 }[period]);
     assert.equal(r.body.runs, 2);
+    // two runs of a few seconds each, empty buckets count 0
+    assert.ok(r.body.totalS >= 0 && r.body.totalS < 120, `totalS ${r.body.totalS}`);
+    assert.ok(r.body.buckets.filter((x) => x.runs === 0).every((x) => x.totalS === 0));
   }
 
   r = await h.api('GET', `/devices/${S.deviceId}/events`, { token: S.token });
