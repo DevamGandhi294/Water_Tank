@@ -1,0 +1,25 @@
+name: water_tank
+description: Water Tank app - watch and control your tank from anywhere.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  socket_io_client: ^3.0.2
+  flutter_secure_storage: ^11.2.0
+  mobile_scanner: ^7.5.0
+  intl: ^0.20.1
+  provider: ^6.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
