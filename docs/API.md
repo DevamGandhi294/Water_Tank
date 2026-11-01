@@ -1,6 +1,21 @@
 # Water Level Platform: API list (v1)
 
-Derived screen by screen from the app and admin panel design (see the clickable mockup). Every endpoint maps to tables in [`database/schema.sql`](../database/schema.sql). No code yet: this is the contract the backend will be built and tested against.
+Derived screen by screen from the app and admin panel design (see the clickable mockup). Every endpoint maps to tables in [`database/schema.sql`](../database/schema.sql) plus migrations 002–003. **Implemented** in `backend/` and covered by `backend/test/api.test.js`. The firmware side is in [DEVICE-API.md](DEVICE-API.md).
+
+### Changes made while building (2026-11-01)
+
+| Area | Change |
+|---|---|
+| Sign-up | No SMS provider yet (`SMS_PROVIDER=none`). `POST /auth/register` returns the login response at once with `otpSent: false`. `/auth/otp/*`, `/me/phone*` return `501 NOT_ENABLED` until SMS is turned on; with `SMS_PROVIDER=msg91` they work as written below. |
+| Google sign-in | Skipped for now: `POST /auth/google` returns `501 NOT_ENABLED`. |
+| Password reset | Done by the admin: **new** `POST /admin/users/:id/password {newPassword}` → `204`, logs the user out everywhere. |
+| Device login | MQTT login by registered **main board MAC** only, no device secret. `POST /admin/devices` no longer returns `deviceSecret`; `POST /admin/devices/:id/secret` returns `501`. |
+| Claim | `POST /devices/claim/check` and `/devices/claim` also accept `{qr: "WT1:<serial>:<code>"}` instead of `serial` + `claimCode`. |
+| Logout | `POST /auth/logout` deletes the refresh token. Re-using an already **rotated** refresh token logs the user out everywhere (token theft protection). |
+| Pump run summary | `period=day` → 24 hourly buckets for today, `week` → last 7 days, `month` → last 30 days, in the device time zone. |
+| Extra fields | `deviceCard.isDisabled`; `deviceDetail.state.fwVersion/senderOk`; admin device detail adds `mqttUsername`, `claimCodeActive`, `boardHistory`. Bulk register returns `stickerSheetHtml` (printable A4). |
+| Errors | Validation problems are `400 VALIDATION` with `field`; business rules (cutoff, height, timers) are `422`. |
+| One-off events | `on_refused` and `ota_failed` events are stored already resolved, so they never show as open faults. |
 
 Stack: Node.js + Express, PostgreSQL (Docker, port 5433), Mosquitto, Socket.IO. FCM is used only for push.
 
@@ -188,12 +203,12 @@ All paths start with `/admin`. Every write also inserts into `audit_log`.
 | # | Method | Path | Body → Response |
 |---|---|---|---|
 | 10.3 | GET | `/admin/devices?q&status&online&claimed&fw&limit&cursor` | `q` matches serial, MAC (with or without colons), owner name or phone. → `{items: [{id, serial, macMain, macSender, owner, name, state, fwVersion, createdAt}], total}` |
-| 10.4 | POST | `/admin/devices` | `{macMain, macSender, hwModel?, manufacturedAt?, serial?}` → `201 {device, serial, mqttUsername, deviceSecret, claimCode, qrPayload, qrPngBase64}`. **`deviceSecret` and `claimCode` are shown only in this response** (only hashes are stored). 409 `MAC_EXISTS`. Serial auto: `WT-<year>-<5 digits>`. |
+| 10.4 | POST | `/admin/devices` | `{macMain, macSender, hwModel?, manufacturedAt?, serial?}` → `201 {device, serial, mqttUsername, claimCode, qrPayload, qrPngBase64}`. **`claimCode` is shown only in this response** (only its hash is stored). 409 `MAC_EXISTS`. Serial auto: `WT-<year>-<5 digits>`. |
 | 10.5 | POST | `/admin/devices/bulk` | `{rows: [{macMain, macSender}]}` (CSV upload in UI) → per-row result like 10.4, plus a printable sticker sheet. |
 | 10.6 | GET | `/admin/devices/:id` | → `deviceDetail` + owner, members, last 20 events, last 20 commands, OTA history, settings history |
 | 10.7 | PATCH | `/admin/devices/:id` | `{name?, location?, hwModel?, isDisabled?}` → device. Disabled: MQTT login refused, app shows "Disabled by support". |
 | 10.8 | POST | `/admin/devices/:id/claim-code` | → `{claimCode, qrPayload, qrPngBase64}`. New code (old one stops working). Use for a lost sticker or a resold device. |
-| 10.9 | POST | `/admin/devices/:id/secret` | → `{deviceSecret}`. Rotates the MQTT secret (must be reflashed). |
+| 10.9 | POST | `/admin/devices/:id/secret` | `501`: devices log in by MAC only, there is no secret. |
 | 10.10 | POST | `/admin/devices/:id/unclaim` | `{reason}` → `204`. Removes owner + shares. |
 | 10.11 | POST | `/admin/devices/:id/transfer` | `{toPhone}` → device. Moves ownership. |
 | 10.12 | POST | `/admin/devices/:id/boards` | `{role, mac}` → replaces a board for repair (old row gets `replaced_at`). |
@@ -212,6 +227,7 @@ QR payload (printed on the sticker): `WT1:<serial>:<claimCode>` e.g. `WT1:WT-202
 | 10.19 | POST | `/admin/users/:id/unblock` | → `204` |
 | 10.20 | POST | `/admin/users/:id/logout-all` | → `204` |
 | 10.21 | PATCH | `/admin/users/:id` | `{fullName?, role?}` → user. Can't remove your own super_admin role. |
+| 10.21b | POST | `/admin/users/:id/password` | `{newPassword}` → `204`. Admin sets a new password (no SMS reset yet); logs the user out everywhere. |
 
 ### Firmware and OTA
 | # | Method | Path | Body → Response |
@@ -265,7 +281,7 @@ Expired token → server emits `auth:expired` and disconnects; the app refreshes
 
 ## 13. MQTT topics (ESP ↔ backend)
 
-Broker: Mosquitto with TLS on 8883 (1883 only on localhost/LAN for testing). Username = `devices.mqtt_username` (main MAC without colons), password = device secret. ACL: a device can only use `wt/<its username>/#`. `<d>` below = mqtt_username.
+Broker: Mosquitto with TLS on 8883 (1883 only on localhost/LAN for testing). Username = client id = `devices.mqtt_username` (main MAC, 12 lowercase hex, no colons); the password must be non-empty but is ignored (MAC-only login, checked by the backend through mosquitto-go-auth). ACL: a device can only use its own `wt/<d>/...` topics in the directions below. `<d>` below = mqtt_username. **Full firmware guide with every payload: [DEVICE-API.md](DEVICE-API.md).**
 
 | Topic | Dir | QoS / retain | Payload |
 |---|---|---|---|

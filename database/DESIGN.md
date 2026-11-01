@@ -13,7 +13,7 @@ PostgreSQL 14+ (tested on 16) on the Contabo VPS. This replaces Firebase complet
 | Login | Phone + password (with SMS OTP), or a Google account. Email is optional. |
 | Level | The ESP sends cm. Level % is calculated only if the user sets the tank height. The app shows both. |
 | Time | Everything is stored in UTC. Each device has a time zone (default `Asia/Kolkata`) for display and timers. |
-| MQTT | Mosquitto. Device login is checked against `devices.mqtt_username` + `secret_hash`. |
+| MQTT | Mosquitto. Device login is checked by the backend against `devices.mqtt_username` (registered main MAC, not disabled). |
 
 ## Tables (21 tables + 2 views)
 
@@ -43,7 +43,7 @@ views: device_access (who may see/control a device), admin_stats (dashboard numb
 
 ## How the main flows use it
 
-**Manufacturing (admin panel).** The super admin enters both MACs. The backend creates a `devices` row and generates a random device secret and claim code. Only their hashes are stored. The plain values are shown once: the secret is flashed into the ESP and the claim code is printed in the QR as `{serial, claimCode}`.
+**Manufacturing (admin panel).** The super admin enters both MACs. The backend creates a `devices` row and a random claim code. Only its hash is stored; the plain code is shown once and printed in the QR as `WT1:<serial>:<claimCode>`. Since migration 003 there is no device secret: the board logs in to MQTT with its registered main MAC (decision 2026-11-01).
 
 **Claiming (app).** The user scans the QR and the backend checks the claim code hash. If `owner_id` is still NULL, it sets the owner and `claimed_at`, and clears `claim_code_hash` so the code can't be reused. Because there is only one owner column, a second person can't claim the same device.
 
