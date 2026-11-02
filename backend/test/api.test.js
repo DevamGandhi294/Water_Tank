@@ -130,8 +130,10 @@ test('2. admin login + register device', async () => {
   r = await h.api('POST', '/admin/devices', { token: S.admin, body: { macMain: S.macMain.toLowerCase().replace(/:/g, '-'), macSender: S.macSender } });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   assert.match(r.body.serial, /^WT-\d{4}-\d{5}$/);
-  assert.match(r.body.claimCode, /^[0-9A-Z]{4}-[0-9A-Z]{4}$/);
-  assert.equal(r.body.qrPayload, `WT1:${r.body.serial}:${r.body.claimCode}`);
+  assert.match(r.body.claimCode, /^[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/);
+  assert.equal(r.body.qrPayload, `WT2:${r.body.claimCode.replace(/-/g, '')}`);
+  assert.ok(!r.body.qrPayload.includes(r.body.serial)); // QR holds no serial or MAC
+  assert.ok(r.body.registeredAt);
   assert.ok(r.body.qrPngBase64.length > 100);
   assert.equal(r.body.mqttUsername, S.macMain.replace(/:/g, '').toLowerCase());
   assert.equal(r.body.deviceSecret, undefined); // MAC-only login
@@ -207,10 +209,19 @@ test('3. claim check + claim + list', async () => {
   assert.equal(r.status, 404);
   assert.equal(r.body.error.code, 'INVALID_CODE');
 
-  r = await h.api('POST', '/devices/claim/check', { token: S.token, body: { qr: `WT1:${S.serial}:${S.claimCode.toLowerCase()}` } });
+  r = await h.api('POST', '/devices/claim/check', { token: S.token, body: { qr: 'WT2:AAAAAAAAAAAAAAAA' } });
+  assert.equal(r.status, 404);
+  r = await h.api('POST', '/devices/claim/check', { token: S.token, body: { qr: `WT2:${S.claimCode.replace(/-/g, '')}` } });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.available, true);
   assert.equal(r.body.serial, S.serial);
+  assert.ok(r.body.registeredAt);
+  // typed code alone (no serial), lowercase
+  r = await h.api('POST', '/devices/claim/check', { token: S.token, body: { claimCode: S.claimCode.toLowerCase() } });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  // wrong serial with a right token is refused
+  r = await h.api('POST', '/devices/claim/check', { token: S.token, body: { serial: 'WT-1999-00001', claimCode: S.claimCode } });
+  assert.equal(r.status, 404);
 
   r = await h.api('POST', '/devices/claim', {
     token: S.token,
@@ -231,9 +242,10 @@ test('3. claim check + claim + list', async () => {
 
   // second person cannot claim it
   S.userB = await h.registerAndLogin('Asha');
-  r = await h.api('POST', '/devices/claim/check', { token: S.userB.token, body: { serial: S.serial, claimCode: S.claimCode } });
-  assert.equal(r.status, 409);
-  assert.equal(r.body.error.code, 'ALREADY_CLAIMED');
+  // the token is erased once used, so a second scan finds nothing
+  r = await h.api('POST', '/devices/claim/check', { token: S.userB.token, body: { qr: `WT2:${S.claimCode.replace(/-/g, '')}` } });
+  assert.equal(r.status, 404);
+  assert.equal(r.body.error.code, 'INVALID_CODE');
 
   r = await h.api('GET', '/devices', { token: S.token });
   assert.equal(r.status, 200);
@@ -654,7 +666,8 @@ test('10. admin device actions + stats + audit', async () => {
   assert.equal(r.body.settings.autoMode, false);
 
   r = await h.api('POST', `/admin/devices/${S.deviceId}/claim-code`, { token: S.admin });
-  assert.match(r.body.claimCode, /^[0-9A-Z]{4}-[0-9A-Z]{4}$/);
+  assert.match(r.body.claimCode, /^[0-9A-Z]{4}(-[0-9A-Z]{4}){3}$/);
+  assert.equal(r.body.qrPayload, `WT2:${r.body.claimCode.replace(/-/g, '')}`);
 
   r = await h.api('POST', `/admin/devices/${S.deviceId}/boards`, { token: S.admin, body: { role: 'sender', mac: h.randomMac() } });
   assert.equal(r.status, 201);
@@ -691,6 +704,20 @@ test('10. admin device actions + stats + audit', async () => {
   assert.equal(r.body.created, 1);
   assert.equal(r.body.failed, 1);
   assert.match(r.body.stickerSheetHtml, /<img/);
+});
+
+test('3b. old WT1 stickers (8-char code + serial) still claim', async () => {
+  const { claimCodeHash } = require('../src/lib/crypto');
+  const reg = await h.api('POST', '/admin/devices', { token: S.admin, body: { macMain: h.randomMac(), macSender: h.randomMac() } });
+  const c = await h.db();
+  try { await c.query('UPDATE devices SET claim_code_hash = $2 WHERE id = $1', [reg.body.device.id, claimCodeHash('K7P2-9XQM')]); } finally { await c.end(); }
+  const u = await h.registerAndLogin('Legacy');
+  let r = await h.api('POST', '/devices/claim/check', { token: u.token, body: { claimCode: 'K7P2-9XQM' } });
+  assert.equal(r.status, 400); // 8-char code needs the serial
+  r = await h.api('POST', '/devices/claim/check', { token: u.token, body: { qr: `WT1:${reg.body.serial}:k7p2-9xqm` } });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  r = await h.api('POST', '/devices/claim', { token: u.token, body: { serial: reg.body.serial, claimCode: 'K7P2-9XQM', name: 'Old sticker' } });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
 });
 
 test('11. delete account releases owned devices', async () => {

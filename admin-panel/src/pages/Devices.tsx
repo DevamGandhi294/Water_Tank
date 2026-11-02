@@ -4,6 +4,7 @@ import { api, qs } from '../lib/api';
 import { onSocket } from '../lib/socket';
 import type { DeviceRow } from '../lib/types';
 import { Level, StatePill, useLoad } from '../components/ui';
+import { fmtDay } from '../lib/format';
 
 export default function Devices() {
   const nav = useNavigate();
@@ -57,7 +58,7 @@ export default function Devices() {
           <tbody>
             {list.data?.items.map((r) => (
               <tr key={r.id} className="click" onClick={() => nav(`/devices/${r.id}`)}>
-                <td className="mono">{r.serial}<div className="small muted" style={{ fontFamily: 'var(--body)' }}>{r.name || ''}</div></td>
+                <td className="mono">{r.serial}<div className="small muted" style={{ fontFamily: 'var(--body)' }}>{r.name || ''}{r.name ? ' · ' : ''}Reg {fmtDay(r.createdAt)}</div></td>
                 <td className="mono">{r.macMain}</td>
                 <td className="mono">{r.macSender}</td>
                 <td>{r.owner ? <>{r.owner.fullName}<div className="small muted">{r.owner.phone}</div></> : <span className="muted">Not claimed</span>}</td>

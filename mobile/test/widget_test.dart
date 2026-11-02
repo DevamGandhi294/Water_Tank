@@ -13,6 +13,11 @@ void main() {
     expect(p?.serial, 'WT-2026-00001');
     expect(p?.code, 'K7P2-9XQM');
     expect(parseQr('https://example.com'), isNull);
+    final p2 = parseQr('WT2:k7p29xqm4htrb2wd');
+    expect(p2?.serial, '');
+    expect(p2?.code, 'K7P29XQM4HTRB2WD');
+    expect(parseQr('WT2:SHORT'), isNull);
+    expect(fmtRegDate('2026-11-02T10:00:00Z'), '02 Nov 2026');
   });
 
   test('phone numbers are normalised', () {

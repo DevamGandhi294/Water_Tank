@@ -10,7 +10,7 @@ Derived screen by screen from the app and admin panel design (see the clickable 
 | Google sign-in | Skipped for now: `POST /auth/google` returns `501 NOT_ENABLED`. |
 | Password reset | Done by the admin: **new** `POST /admin/users/:id/password {newPassword}` → `204`, logs the user out everywhere. |
 | Device login | MQTT login by registered **main board MAC** only, no device secret. `POST /admin/devices` no longer returns `deviceSecret`; `POST /admin/devices/:id/secret` returns `501`. |
-| Claim | `POST /devices/claim/check` and `/devices/claim` also accept `{qr: "WT1:<serial>:<code>"}` instead of `serial` + `claimCode`. |
+| Claim | `POST /devices/claim/check` and `/devices/claim` also accept `{qr: "WT2:<token>"}` (or old `{qr: "WT1:<serial>:<code>"}`) instead of `serial` + `claimCode`. A 16-char token needs no serial. |
 | Logout | `POST /auth/logout` deletes the refresh token. Re-using an already **rotated** refresh token logs the user out everywhere (token theft protection). |
 | Pump run summary | `period=day` → 24 hourly buckets for today, `week` → last 7 days, `month` → last 30 days, in the device time zone. |
 | Extra fields | `deviceCard.isDisabled`; `deviceDetail.state.fwVersion/senderOk`; admin device detail adds `mqttUsername`, `claimCodeActive`, `boardHistory`. Bulk register returns `stickerSheetHtml` (printable A4). |
@@ -82,8 +82,8 @@ Screens: Home (tank list), Add tank (QR scan), Tank detail, Tank settings.
 | # | Method | Path | Role | Body → Response |
 |---|---|---|---|---|
 | 3.1 | GET | `/devices` | user | → `{items: [deviceCard]}`. Owned + shared, no paging (a user has few tanks). |
-| 3.2 | POST | `/devices/claim/check` | user | `{serial, claimCode}` → `{serial, hwModel, available: true}`. Lets the app show "WT-2026-00001 found" before confirming. 404 `INVALID_CODE`, 409 `ALREADY_CLAIMED`. |
-| 3.3 | POST | `/devices/claim` | user | `{serial, claimCode, name, location?, tankHeightCm?, capacityLitres?}` → `201 deviceDetail`. Sets owner, clears `claim_code_hash`, writes `claimed` event. |
+| 3.2 | POST | `/devices/claim/check` | user | `{qr}`, `{claimCode}` (16-char token) or `{serial, claimCode}` (old 8-char code) → `{serial, hwModel, registeredAt, available: true}`. Lets the app show "WT-2026-00001, registered 02 Nov 2026" before confirming. 404 `INVALID_CODE` (also for an already used token), 409 `ALREADY_CLAIMED`. |
+| 3.3 | POST | `/devices/claim` | user | `{serial?, claimCode, name, location?, tankHeightCm?, capacityLitres?}` → `201 deviceDetail`. Sets owner, clears `claim_code_hash`, writes `claimed` event. |
 | 3.4 | GET | `/devices/:id` | view | → `deviceDetail` |
 | 3.5 | PATCH | `/devices/:id` | owner | `{name?, location?, timezone?}` → `deviceDetail` |
 | 3.6 | DELETE | `/devices/:id` | owner | → `204`. Removes the device from the account (owner = null, shares deleted, `unclaimed` event). The QR can't be reused; admin issues a new claim code. Confirm screen in app. |
@@ -203,11 +203,11 @@ All paths start with `/admin`. Every write also inserts into `audit_log`.
 | # | Method | Path | Body → Response |
 |---|---|---|---|
 | 10.3 | GET | `/admin/devices?q&status&online&claimed&fw&limit&cursor` | `q` matches serial, MAC (with or without colons), owner name or phone. → `{items: [{id, serial, macMain, macSender, owner, name, state, fwVersion, createdAt}], total}` |
-| 10.4 | POST | `/admin/devices` | `{macMain, macSender, hwModel?, manufacturedAt?, serial?}` → `201 {device, serial, mqttUsername, claimCode, qrPayload, qrPngBase64}`. **`claimCode` is shown only in this response** (only its hash is stored). 409 `MAC_EXISTS`. Serial auto: `WT-<year>-<5 digits>`. |
+| 10.4 | POST | `/admin/devices` | `{macMain, macSender, hwModel?, manufacturedAt?, serial?}` → `201 {device, serial, registeredAt, mqttUsername, claimCode, qrPayload, qrPngBase64}`. **`claimCode` is shown only in this response** (only its hash is stored). 409 `MAC_EXISTS`. Serial auto: `WT-<year>-<5 digits>`. |
 | 10.5 | POST | `/admin/devices/bulk` | `{rows: [{macMain, macSender}]}` (CSV upload in UI) → per-row result like 10.4, plus a printable sticker sheet. |
 | 10.6 | GET | `/admin/devices/:id` | → `deviceDetail` + owner, members, last 20 events, last 20 commands, OTA history, settings history |
 | 10.7 | PATCH | `/admin/devices/:id` | `{name?, location?, hwModel?, isDisabled?}` → device. Disabled: MQTT login refused, app shows "Disabled by support". |
-| 10.8 | POST | `/admin/devices/:id/claim-code` | → `{claimCode, qrPayload, qrPngBase64}`. New code (old one stops working). Use for a lost sticker or a resold device. |
+| 10.8 | POST | `/admin/devices/:id/claim-code` | → `{serial, registeredAt, claimCode, qrPayload, qrPngBase64}`. New code (old one stops working). Use for a lost sticker or a resold device. |
 | 10.9 | POST | `/admin/devices/:id/secret` | `501`: devices log in by MAC only, there is no secret. |
 | 10.10 | POST | `/admin/devices/:id/unclaim` | `{reason}` → `204`. Removes owner + shares. |
 | 10.11 | POST | `/admin/devices/:id/transfer` | `{toPhone}` → device. Moves ownership. |
@@ -216,7 +216,7 @@ All paths start with `/admin`. Every write also inserts into `audit_log`.
 | 10.14 | PATCH | `/admin/devices/:id/settings` | same as 4.2, for support |
 | 10.15 | DELETE | `/admin/devices/:id` | → `204`. Only if never claimed (mistyped MAC). |
 
-QR payload (printed on the sticker): `WT1:<serial>:<claimCode>` e.g. `WT1:WT-2026-00001:K7P2-9XQM`. Short text keeps the QR small; the app parses it and calls 3.2. The claim code is also printed as text for manual entry.
+QR payload (printed on the sticker): `WT2:<token>` e.g. `WT2:K7P29XQM4HTRB2WD`. The token is 16 random chars (about 78 bits), used once, stored only as an HMAC. The QR holds no serial, MAC or date, so a normal scanner shows only random letters; the backend finds the device by the token hash. The serial, registration date and the code (as `K7P2-9XQM-4HTR-B2WD`, for typing) are printed beside the QR. Old stickers `WT1:<serial>:<8-char code>` still work. The admin panel can read the board MACs over USB (Chrome/Edge, Web Serial) when registering.
 
 ### Users
 | # | Method | Path | Body → Response |
@@ -337,5 +337,5 @@ Retained `settings/set` means an ESP that was offline gets the latest settings a
 ## Decisions you may want to change
 
 - **Level graphs** are not in the API because no level history is stored. The pump run-time chart (8.2) works without it. Turning on the optional `level_hourly` table would add `GET /devices/:id/levels?period=`.
-- **QR format** `WT1:<serial>:<claimCode>` instead of JSON, to keep the sticker QR small and readable by cheap phone cameras.
+- **QR format** `WT2:<token>` (was `WT1:<serial>:<claimCode>`): short text keeps the sticker QR small, and an opaque token means other scanners learn nothing about the device.
 - **Removing a tank** (3.6) does not let the same QR work again; the admin issues a new claim code (10.8). This stops a former owner from re-claiming a sold tank.

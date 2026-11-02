@@ -163,6 +163,7 @@ CREATE TABLE devices (
   )
 );
 CREATE INDEX devices_owner_idx ON devices (owner_id);
+CREATE INDEX devices_claim_code_hash_idx ON devices (claim_code_hash) WHERE claim_code_hash IS NOT NULL;  -- WT2 QR lookup (004)
 CREATE TRIGGER devices_updated BEFORE UPDATE ON devices
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
