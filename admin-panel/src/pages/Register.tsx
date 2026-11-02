@@ -2,14 +2,16 @@ import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { errText, useToast } from '../components/ui';
+import { fmtDay } from '../lib/format';
+import { readMacOverUsb, usbSupported } from '../lib/usbMac';
 
-interface RegResult { device: { id: string }; serial: string; mqttUsername: string; claimCode: string; qrPayload: string; qrPngBase64: string }
+interface RegResult { device: { id: string }; serial: string; registeredAt: string; mqttUsername: string; claimCode: string; qrPayload: string; qrPngBase64: string }
 
-export function Sticker({ serial, claimCode, png }: { serial: string; claimCode: string; png: string }) {
+export function Sticker({ serial, registeredAt, claimCode, png }: { serial: string; registeredAt?: string | null; claimCode: string; png: string }) {
   return (
     <div className="sticker">
       <img src={`data:image/png;base64,${png}`} alt={`QR for ${serial}`} />
-      <div className="mono small" style={{ lineHeight: 1.6 }}><b style={{ fontSize: 14 }}>{serial}</b><br />Code: {claimCode}<br />Scan in the Water Tank app</div>
+      <div className="mono small" style={{ lineHeight: 1.6 }}><b style={{ fontSize: 14 }}>{serial}</b><br />{registeredAt && <>Reg: {fmtDay(registeredAt)}<br /></>}Code: {claimCode}<br />Scan in the Water Tank app</div>
     </div>
   );
 }
@@ -41,6 +43,17 @@ export default function Register() {
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<RegResult | null>(null);
   const [bulk, setBulk] = useState<any>(null);
+  const [mode, setMode] = useState<'type' | 'usb'>(usbSupported() ? 'usb' : 'type');
+  const [reading, setReading] = useState<'' | 'main' | 'sender'>('');
+
+  const readUsb = async (role: 'main' | 'sender') => {
+    setReading(role); setErr('');
+    try {
+      const mac = await readMacOverUsb();
+      if (role === 'main') setMacMain(mac); else setMacSender(mac);
+      toast(`${role === 'main' ? 'Main' : 'Sender'} MAC read: ${mac}`);
+    } catch (ex) { setErr(errText(ex)); } finally { setReading(''); }
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -72,8 +85,22 @@ export default function Register() {
       <div className="head"><h2>Register device</h2></div>
       <div className="grid2">
         <form className="card stack" onSubmit={submit}>
-          <div><label className="lbl" htmlFor="rm">Main relay board MAC</label><input id="rm" className="inp mono" placeholder="A4:CF:12:9B:42:10" value={macMain} onChange={(e) => setMacMain(e.target.value)} /></div>
-          <div><label className="lbl" htmlFor="rs">Sender (ultrasonic) board MAC</label><input id="rs" className="inp mono" placeholder="84:F3:EB:20:14:5B" value={macSender} onChange={(e) => setMacSender(e.target.value)} /></div>
+          <div className="row" style={{ gap: 6 }}>
+            <button type="button" className={`btn sm ${mode === 'usb' ? '' : 'ghost'}`} onClick={() => setMode('usb')}>Connect by USB</button>
+            <button type="button" className={`btn sm ${mode === 'type' ? '' : 'ghost'}`} onClick={() => setMode('type')}>Type MAC</button>
+          </div>
+          {mode === 'usb' && !usbSupported() && <div className="err">USB needs Chrome or Edge on a laptop. Use Type MAC on this browser.</div>}
+          {mode === 'usb' && usbSupported() && <div className="small muted">Plug in the main relay board, press <b>Read</b> and pick its port. Then plug in the sender board and do the same. Close Arduino IDE first.</div>}
+          <div><label className="lbl" htmlFor="rm">Main relay board MAC</label>
+            <div className="row" style={{ flexWrap: 'nowrap', gap: 6 }}>
+              <input id="rm" className="inp mono" style={{ flex: 1 }} placeholder="A4:CF:12:9B:42:10" value={macMain} readOnly={mode === 'usb'} onChange={(e) => setMacMain(e.target.value)} />
+              {mode === 'usb' && <button type="button" className="btn sm" disabled={!!reading || !usbSupported()} onClick={() => readUsb('main')}>{reading === 'main' ? 'Reading…' : 'Read'}</button>}
+            </div></div>
+          <div><label className="lbl" htmlFor="rs">Sender (ultrasonic) board MAC</label>
+            <div className="row" style={{ flexWrap: 'nowrap', gap: 6 }}>
+              <input id="rs" className="inp mono" style={{ flex: 1 }} placeholder="84:F3:EB:20:14:5B" value={macSender} readOnly={mode === 'usb'} onChange={(e) => setMacSender(e.target.value)} />
+              {mode === 'usb' && <button type="button" className="btn sm" disabled={!!reading || !usbSupported()} onClick={() => readUsb('sender')}>{reading === 'sender' ? 'Reading…' : 'Read'}</button>}
+            </div></div>
           <div className="row" style={{ flexWrap: 'nowrap' }}>
             <div style={{ flex: 1 }}><label className="lbl" htmlFor="rh">Hardware model</label><input id="rh" className="inp" value={hwModel} onChange={(e) => setHwModel(e.target.value)} /></div>
             <div style={{ flex: 1 }}><label className="lbl" htmlFor="rd">Made on</label><input id="rd" className="inp" type="date" value={made} onChange={(e) => setMade(e.target.value)} /></div>
@@ -84,13 +111,13 @@ export default function Register() {
             Upload CSV of many MAC pairs
             <input type="file" accept=".csv,.txt" hidden onChange={(e) => e.target.files?.[0] && onCsv(e.target.files[0])} />
           </label>
-          <div className="small muted">The serial number is given automatically (WT-&lt;year&gt;-00001…). Devices log in to MQTT with the main board MAC, so there is no secret to flash. CSV: one line per device, <span className="mono">mainMAC,senderMAC</span>.</div>
+          <div className="small muted">The serial number is given automatically (WT-&lt;year&gt;-00001…). Devices log in to MQTT with the main board MAC, so there is no secret to flash. The QR holds only a random one-time code (no serial, no MAC); the serial and date are printed beside it. CSV: one line per device, <span className="mono">mainMAC,senderMAC</span>.</div>
         </form>
         <div className="card stack">
           {res ? (
             <>
               <div className="between"><h3>Registered</h3><span className="pill ok"><i />{res.serial}</span></div>
-              <Sticker serial={res.serial} claimCode={res.claimCode} png={res.qrPngBase64} />
+              <Sticker serial={res.serial} registeredAt={res.registeredAt} claimCode={res.claimCode} png={res.qrPngBase64} />
               <div className="secret small"><b>The claim code is shown only now.</b> Print the sticker before leaving this page. If it is lost, make a new code on the device page.</div>
               <dl className="kv"><dt>MQTT username</dt><dd className="mono">{res.mqttUsername}</dd><dt>QR text</dt><dd className="mono">{res.qrPayload}</dd></dl>
               <div className="row">
@@ -103,9 +130,9 @@ export default function Register() {
             <>
               <div className="between"><h3>CSV result</h3><span className="small muted">{bulk.created} created · {bulk.failed} failed</span></div>
               {bulk.stickerSheetHtml && <button className="btn sm" onClick={printSheet}>Print sticker sheet</button>}
-              <div className="tbl"><table><thead><tr><th>#</th><th>Serial</th><th>Claim code</th><th>Result</th></tr></thead><tbody>
+              <div className="tbl"><table><thead><tr><th>#</th><th>Serial</th><th>Registered</th><th>Claim code</th><th>Result</th></tr></thead><tbody>
                 {bulk.results.map((r: any) => (
-                  <tr key={r.row}><td>{r.row}</td><td className="mono">{r.serial || r.macMain}</td><td className="mono">{r.claimCode || ''}</td>
+                  <tr key={r.row}><td>{r.row}</td><td className="mono">{r.serial || r.macMain}</td><td>{r.registeredAt ? fmtDay(r.registeredAt) : ''}</td><td className="mono">{r.claimCode || ''}</td>
                     <td>{r.ok ? <span className="pill ok"><i />ok</span> : <span className="err">{r.error.message}</span>}</td></tr>
                 ))}
               </tbody></table></div>

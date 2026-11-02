@@ -15,3 +15,5 @@ export const fmtDuration = (s?: number | null) => {
   const m = Math.round(s / 60);
   return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${m % 60} m`;
 };
+// "02 Nov 2026" (sticker / registration date)
+export const fmtDay = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '–');

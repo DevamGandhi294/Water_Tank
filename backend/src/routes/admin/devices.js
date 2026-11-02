@@ -4,7 +4,7 @@ const db = require('../../db');
 const { E } = require('../../errors');
 const { z, parse } = require('../../lib/validate');
 const { normalizeMac, macToUsername, macOut, normalizePhone, iso, pageLimit, decodeCursor, encodeCursor } = require('../../lib/format');
-const { claimCode, claimCodeHash } = require('../../lib/crypto');
+const { claimToken, claimCodeHash } = require('../../lib/crypto');
 const { qrPayload, qrPngBase64, stickerSheetHtml } = require('../../lib/qr');
 const { audit } = require('../../lib/audit');
 const ser = require('../../lib/serialize');
@@ -35,7 +35,7 @@ async function registerDevice(input, req) {
   const macMain = normalizeMac(b.macMain, 'macMain');
   const macSender = normalizeMac(b.macSender, 'macSender');
   if (macMain === macSender) throw E.bad('SAME_MAC', 'Main and sender MAC must be different', 'macSender');
-  const code = claimCode();
+  const code = claimToken();
 
   const device = await db.tx(async (c) => {
     // one registration at a time, so serial numbers never collide
@@ -76,10 +76,11 @@ async function registerDevice(input, req) {
   });
   // retained settings, so the ESP gets cutoff 25 cm the first time it connects
   await settingsSync.publish(device.id);
-  const qr = qrPayload(device.serial_no, code);
+  const qr = qrPayload(code);
   return {
     device: await views.detail(device.id, 'admin'),
     serial: device.serial_no,
+    registeredAt: iso(device.created_at),
     mqttUsername: device.mqtt_username,
     claimCode: code,
     qrPayload: qr,
@@ -154,7 +155,7 @@ router.post('/bulk', async (req, res) => {
   for (const [i, row] of b.rows.entries()) {
     try {
       const r = await registerDevice(row, req);
-      results.push({ row: i + 1, ok: true, serial: r.serial, deviceId: r.device.id, mqttUsername: r.mqttUsername, claimCode: r.claimCode, qrPayload: r.qrPayload, qrPngBase64: r.qrPngBase64 });
+      results.push({ row: i + 1, ok: true, serial: r.serial, registeredAt: r.registeredAt, deviceId: r.device.id, mqttUsername: r.mqttUsername, claimCode: r.claimCode, qrPayload: r.qrPayload, qrPngBase64: r.qrPngBase64 });
     } catch (err) {
       results.push({ row: i + 1, ok: false, macMain: row.macMain, macSender: row.macSender, error: { code: err.code || 'ERROR', message: err.message } });
     }
@@ -230,11 +231,11 @@ router.patch('/:id', async (req, res) => {
 // 10.8 new claim code (old one stops working)
 router.post('/:id/claim-code', async (req, res) => {
   const d = await loadDevice(req);
-  const code = claimCode();
+  const code = claimToken();
   await db.query('UPDATE devices SET claim_code_hash = $2 WHERE id = $1', [d.id, claimCodeHash(code)]);
   await audit(req, 'device.claim_code', 'device', d.id, { claimed: !!d.owner_id });
-  const qr = qrPayload(d.serial_no, code);
-  res.json({ claimCode: code, qrPayload: qr, qrPngBase64: await qrPngBase64(qr), note: d.owner_id ? 'Device is still owned; unclaim it before someone else can use this code.' : undefined });
+  const qr = qrPayload(code);
+  res.json({ serial: d.serial_no, registeredAt: iso(d.created_at), claimCode: code, qrPayload: qr, qrPngBase64: await qrPngBase64(qr), note: d.owner_id ? 'Device is still owned; unclaim it before someone else can use this code.' : undefined });
 });
 
 // 10.9 MQTT secret: not used, devices log in by MAC only (decision 2026-11-01)

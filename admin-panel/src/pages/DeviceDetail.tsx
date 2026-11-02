@@ -125,7 +125,7 @@ export default function DeviceDetail() {
 
       {dialog === 'claim' && claim && (
         <Modal title="New claim code" onClose={() => setDialog(null)}>
-          <Sticker serial={d.serial} claimCode={claim.claimCode} png={claim.qrPngBase64} />
+          <Sticker serial={d.serial} registeredAt={claim.registeredAt || d.createdAt} claimCode={claim.claimCode} png={claim.qrPngBase64} />
           <div className="secret small">Shown only now. The old code no longer works.{claim.note ? ` ${claim.note}` : ''}</div>
           <div className="row"><button className="btn sm ghost" onClick={() => downloadPng(`${d.serial}.png`, claim.qrPngBase64)}>Download QR PNG</button><button className="btn sm" onClick={() => setDialog(null)}>Done</button></div>
         </Modal>

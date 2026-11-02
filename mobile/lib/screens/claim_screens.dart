@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
-/// QR on the sticker: `WT1:<serial>:<claimCode>`
+/// QR on the sticker: `WT2:<16-char token>` (new, holds no serial or MAC)
+/// or `WT1:<serial>:<claimCode>` (old stickers). For WT2 the serial is empty;
+/// the server finds the tank by the token.
 ({String serial, String code})? parseQr(String raw) {
-  final m = RegExp(r'^WT1:([^:]+):(.+)$').firstMatch(raw.trim());
+  final t = raw.trim();
+  final m2 = RegExp(r'^WT2:([0-9A-Za-z]{16})$').firstMatch(t);
+  if (m2 != null) return (serial: '', code: m2.group(1)!.toUpperCase());
+  final m = RegExp(r'^WT1:([^:]+):(.+)$').firstMatch(t);
   if (m == null) return null;
   return (serial: m.group(1)!, code: m.group(2)!);
+}
+
+/// "02 Nov 2026"
+String fmtRegDate(String? iso) {
+  final d = iso == null ? null : DateTime.tryParse(iso);
+  return d == null ? '' : DateFormat('dd MMM yyyy').format(d.toLocal());
 }
 
 class ClaimScanScreen extends StatefulWidget {
@@ -19,7 +31,7 @@ class ClaimScanScreen extends StatefulWidget {
 }
 
 class _ClaimScanScreenState extends State<ClaimScanScreen> {
-  final _serial = TextEditingController(text: 'WT-');
+  final _serial = TextEditingController();
   final _code = TextEditingController();
   final _scanner = MobileScannerController(formats: const [BarcodeFormat.qrCode]);
   bool _busy = false;
@@ -36,7 +48,7 @@ class _ClaimScanScreenState extends State<ClaimScanScreen> {
       if (!mounted) return;
       await _scanner.stop();
       if (!mounted) return;
-      final added = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => ClaimNameScreen(serial: r['serial'], code: code.trim(), hwModel: r['hwModel'] ?? '')));
+      final added = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => ClaimNameScreen(serial: r['serial'], code: code.trim(), hwModel: r['hwModel'] ?? '', registeredAt: r['registeredAt'])));
       if (!mounted) return;
       if (added == true) {
         Navigator.pop(context, true);
@@ -63,7 +75,7 @@ class _ClaimScanScreenState extends State<ClaimScanScreen> {
         continue;
       }
       _handled = true;
-      _serial.text = p.serial;
+      if (p.serial.isNotEmpty) _serial.text = p.serial;
       _code.text = p.code;
       _check(p.serial, p.code);
       return;
@@ -93,7 +105,7 @@ class _ClaimScanScreenState extends State<ClaimScanScreen> {
                   color: C.deep,
                   alignment: Alignment.center,
                   padding: const EdgeInsets.all(20),
-                  child: const Text('Camera not available. Type the serial and code from the sticker below.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                  child: const Text('Camera not available. Type the code from the sticker below.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
                 ),
               ),
               IgnorePointer(
@@ -110,9 +122,9 @@ class _ClaimScanScreenState extends State<ClaimScanScreen> {
         const SizedBox(height: 18),
         const Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Muted('or type it')), Expanded(child: Divider())]),
         const SizedBox(height: 14),
-        TextField(controller: _serial, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Serial (WT-2026-00001)')),
+        TextField(controller: _code, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Code on the sticker', hintText: 'K7P2-9XQM-4HTR-B2WD')),
         const SizedBox(height: 12),
-        TextField(controller: _code, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Claim code (K7P2-9XQM)')),
+        TextField(controller: _serial, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Serial (only for old 8-letter codes)', hintText: 'WT-2026-00001')),
         const SizedBox(height: 12),
         if (_error != null) Padding(padding: const EdgeInsets.only(bottom: 10), child: Text(_error!, style: const TextStyle(color: C.bad))),
         FilledButton(onPressed: _busy ? null : () => _check(_serial.text, _code.text), child: const Text('Continue')),
@@ -122,8 +134,9 @@ class _ClaimScanScreenState extends State<ClaimScanScreen> {
 }
 
 class ClaimNameScreen extends StatefulWidget {
-  const ClaimNameScreen({super.key, required this.serial, required this.code, required this.hwModel});
+  const ClaimNameScreen({super.key, required this.serial, required this.code, required this.hwModel, this.registeredAt});
   final String serial;
+  final String? registeredAt;
   final String code;
   final String hwModel;
   @override
@@ -178,6 +191,7 @@ class _ClaimNameScreenState extends State<ClaimNameScreen> {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(widget.serial, style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w700)),
+                if (fmtRegDate(widget.registeredAt).isNotEmpty) Muted('Registered ${fmtRegDate(widget.registeredAt)}'),
                 Muted('${widget.hwModel} · main + sender board'),
               ]),
             ),

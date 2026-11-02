@@ -29,27 +29,46 @@ router.get('/', async (req, res) => {
 
 const claimLimiter = limiter('claim', { limit: 5, keyFn: (r) => r.user.id, failuresOnly: true });
 
+const INVALID = 'This code is not valid. Check the sticker and try again.';
+
+// serial is required for old 8-char codes (WT1). A 16-char token (WT2) finds
+// the device by its hash alone; if a serial is also given it must match.
 async function findClaimable(serial, code) {
-  const d = await db.one('SELECT * FROM devices WHERE upper(serial_no) = upper($1)', [String(serial || '').trim()]);
-  if (!d) throw E.notFound('INVALID_CODE', 'This code is not valid. Check the sticker and try again.');
-  if (d.owner_id) throw E.conflict('ALREADY_CLAIMED', 'This tank already belongs to another account. Contact support.');
-  if (!d.claim_code_hash || d.claim_code_hash !== claimCodeHash(code)) {
-    throw E.notFound('INVALID_CODE', 'This code is not valid. Check the sticker and try again.');
+  const norm = normalizeClaimCode(code);
+  let d;
+  if (norm.length === 16) {
+    d = await db.one('SELECT * FROM devices WHERE claim_code_hash = $1', [claimCodeHash(norm)]);
+    if (!d) throw E.notFound('INVALID_CODE', 'This code is not valid or was already used. Check the sticker and try again.');
+    if (serial && serial.trim() && !/^WT-?$/i.test(serial.trim()) && d.serial_no.toUpperCase() !== serial.trim().toUpperCase()) {
+      throw E.notFound('INVALID_CODE', INVALID);
+    }
+  } else {
+    d = await db.one('SELECT * FROM devices WHERE upper(serial_no) = upper($1)', [String(serial || '').trim()]);
+    if (!d) throw E.notFound('INVALID_CODE', INVALID);
   }
+  if (d.owner_id) throw E.conflict('ALREADY_CLAIMED', 'This tank already belongs to another account. Contact support.');
+  if (!d.claim_code_hash || d.claim_code_hash !== claimCodeHash(norm)) throw E.notFound('INVALID_CODE', INVALID);
   if (d.is_disabled) throw E.conflict('DEVICE_DISABLED', 'This tank is disabled by support');
   return d;
 }
 
-// accepts {serial, claimCode} or {qr: "WT1:<serial>:<code>"}
+// accepts {qr: "WT2:<token>"}, {qr: "WT1:<serial>:<code>"} (old stickers),
+// {claimCode: <16-char token>, serial?} or {serial, claimCode: <8-char code>}
 function claimInput(body) {
-  const b = parse(z.object({ serial: z.string().max(40).optional(), claimCode: z.string().max(40).optional(), qr: z.string().max(200).optional() }).passthrough(), body);
+  const b = parse(z.object({ serial: z.string().max(40).optional().nullable(), claimCode: z.string().max(40).optional(), qr: z.string().max(200).optional() }).passthrough(), body);
   if (b.qr) {
-    const m = /^WT1:([^:]+):(.+)$/.exec(b.qr.trim());
+    const raw = b.qr.trim();
+    const m2 = /^WT2:([0-9A-Za-z]{16})$/.exec(raw);
+    if (m2) return { serial: null, claimCode: m2[1] };
+    const m = /^WT1:([^:]+):(.+)$/.exec(raw);
     if (!m) throw E.bad('INVALID_QR', 'This QR code is not a Water Tank code', 'qr');
     return { serial: m[1], claimCode: m[2] };
   }
-  if (!b.serial || !b.claimCode) throw E.bad('VALIDATION', 'serial and claimCode are required', b.serial ? 'claimCode' : 'serial');
-  if (normalizeClaimCode(b.claimCode).length !== 8) throw E.notFound('INVALID_CODE', 'This code is not valid. Check the sticker and try again.');
+  if (!b.claimCode) throw E.bad('VALIDATION', 'claimCode is required', 'claimCode');
+  const n = normalizeClaimCode(b.claimCode).length;
+  if (n === 16) return { serial: b.serial || null, claimCode: b.claimCode };
+  if (n !== 8) throw E.notFound('INVALID_CODE', INVALID);
+  if (!b.serial) throw E.bad('VALIDATION', 'serial is required for this code', 'serial');
   return { serial: b.serial, claimCode: b.claimCode };
 }
 
@@ -57,7 +76,7 @@ function claimInput(body) {
 router.post('/claim/check', claimLimiter, async (req, res) => {
   const { serial, claimCode } = claimInput(req.body);
   const d = await findClaimable(serial, claimCode);
-  res.json({ serial: d.serial_no, hwModel: d.hw_model, available: true });
+  res.json({ serial: d.serial_no, hwModel: d.hw_model, registeredAt: iso(d.created_at), available: true });
 });
 
 // 3.3

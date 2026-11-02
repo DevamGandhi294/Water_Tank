@@ -14,6 +14,14 @@ function claimCode() {
   for (let i = 0; i < 8; i++) s += CLAIM_ALPHABET[bytes[i] % CLAIM_ALPHABET.length];
   return `${s.slice(0, 4)}-${s.slice(4)}`;
 }
+// QR claim token (WT2 stickers): 16 random chars, about 78 bits, shown as
+// XXXX-XXXX-XXXX-XXXX. The device is found by the token's hash alone, so the
+// QR carries no serial or MAC.
+function claimToken() {
+  let s = '';
+  for (let i = 0; i < 16; i++) s += CLAIM_ALPHABET[crypto.randomInt(CLAIM_ALPHABET.length)];
+  return s.match(/.{4}/g).join('-');
+}
 const normalizeClaimCode = (c) => String(c || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
 const claimCodeHash = (code) => hmac(`claim:${normalizeClaimCode(code)}`);
 
@@ -30,6 +38,6 @@ const safeEqual = (a, b) => {
 };
 
 module.exports = {
-  sha256, hmac, randomToken, claimCode, normalizeClaimCode, claimCodeHash,
+  sha256, hmac, randomToken, claimCode, claimToken, normalizeClaimCode, claimCodeHash,
   otpCode, otpHash, hashPassword, checkPassword, safeEqual,
 };
