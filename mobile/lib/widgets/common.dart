@@ -27,19 +27,7 @@ class Pill extends StatelessWidget {
 
 Widget statusPill(DeviceState s, {bool disabled = false}) {
   if (disabled) return Pill.gray('Disabled by support');
-  if (!s.online) return Pill.gray(s.lastSeenAt == null ? 'Relay offline' : 'Relay offline · seen ${ago(s.lastSeenAt)} ago');
-  if (s.status == 'WORK' || s.faulty) return Pill.ok('Relay online');
-  if (s.status == 'CONFIG') return Pill.warn('Wi-Fi setup');
-  if (s.status == 'OTA') return Pill.warn('Updating');
-  return Pill.warn(s.status);
-}
-
-/// The sensor (2nd) board is only known through the relay board.
-Widget sensorPill(DeviceState s) {
-  if (s.online && s.status == 'WORK') return Pill.ok('Sensor online');
-  if (s.online && s.status == 'FAULT') return Pill.bad('Sensor offline');
-  if (s.online && s.status == 'DOWN') return Pill.bad('Sensor no echo');
-  return Pill.gray('Sensor unknown');
+  return s.online ? Pill.ok('Online') : Pill.gray('Offline');
 }
 
 String ago(DateTime? t) {

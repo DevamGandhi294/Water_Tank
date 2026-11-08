@@ -201,9 +201,9 @@ class _TankScreenState extends State<TankScreen> {
     }
     final litres = (d.settings.capacityLitres != null && s.levelPct != null) ? ' · about ${(d.settings.capacityLitres! * s.levelPct! / 100).round()} L' : '';
     return ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 24), children: [
-      Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
+      Row(children: [
         statusPill(s, disabled: d.isDisabled),
-        if (!d.isDisabled) sensorPill(s),
+        const Spacer(),
         if (s.lastSeenAt != null) Muted('Updated ${ago(s.lastSeenAt)} ago'),
       ]),
       if (s.online && s.faulty)
