@@ -520,6 +520,11 @@ test('7b. alerts: settings, tank full notification, sensor fault, offline', asyn
   assert.equal(r.status, 202);
   r = await h.api('POST', `/devices/${S.deviceId}/pump`, { token: S.token, body: { action: 'off' } });
   assert.equal(r.status, 202);
+  // an unchanged report still refreshes lastSeenAt on the socket
+  const seenAt = new Date().toISOString();
+  await h.sleep(1100);
+  await S.dev.sendState();
+  await S.sock.waitFor('device:state', (p) => p.deviceId === S.deviceId && p.lastSeenAt > seenAt);
   await S.dev.sendState({ st: 'WORK' });
   await h.until(async () => {
     const x = await h.api('GET', '/admin/events?severity=critical&open=true', { token: S.admin });

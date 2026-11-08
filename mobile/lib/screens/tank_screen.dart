@@ -61,7 +61,7 @@ class _TankScreenState extends State<TankScreen> {
         }
       }),
     ]);
-    _tick = Timer.periodic(const Duration(seconds: 15), (_) => mounted ? setState(() {}) : null);
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
     _load();
   }
 

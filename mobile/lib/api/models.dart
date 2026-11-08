@@ -21,7 +21,11 @@ class User {
 }
 
 class DeviceState {
-  bool online;
+  static const offlineAfter = Duration(seconds: 12);
+
+  bool _online;
+  DateTime? _heardAt; // phone clock, so a wrong phone time can't fake Offline
+  int _heartbeats = 0; // servers without the live signal never send unchanged reports
   String status;
   bool pumpOn;
   double? distanceCm;
@@ -30,7 +34,7 @@ class DeviceState {
   int? wifiRssi;
   String? fwVersion;
   DeviceState.fromJson(Map<String, dynamic> j)
-      : online = j['online'] ?? false,
+      : _online = j['online'] ?? false,
         status = j['status'] ?? 'UNKNOWN',
         pumpOn = j['pumpOn'] ?? false,
         distanceCm = _d(j['distanceCm']),
@@ -38,7 +42,23 @@ class DeviceState {
         lastSeenAt = _dt(j['lastSeenAt']),
         wifiRssi = _i(j['wifiRssi']),
         fwVersion = j['fwVersion'];
+  bool get online {
+    if (!_online) return false;
+    if (_heartbeats < 2 || _heardAt == null) return true;
+    return DateTime.now().difference(_heardAt!) < offlineAfter;
+  }
+
+  set online(bool v) {
+    _online = v;
+    if (v) _heardAt = DateTime.now();
+  }
+
   void merge(Map<String, dynamic> j) {
+    final seen = _dt(j['lastSeenAt']);
+    if (seen != null && lastSeenAt != null && seen.isAfter(lastSeenAt!) && j['online'] == _online && j['status'] == status &&
+        j['pumpOn'] == pumpOn && _d(j['distanceCm']) == distanceCm && _i(j['levelPct']) == levelPct) {
+      _heartbeats++;
+    }
     if (j.containsKey('online')) online = j['online'] ?? false;
     if (j.containsKey('status')) status = j['status'] ?? status;
     if (j.containsKey('pumpOn')) pumpOn = j['pumpOn'] ?? false;

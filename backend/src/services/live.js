@@ -290,10 +290,12 @@ async function handle(username, sub, payload) {
   const e = await get(deviceId);
   if (!e || e.disabled) return;
   await withLock(e, async () => {
+    // the 'offline' last will comes from the broker, not from the board
+    const fromBoard = !(sub === 'status' && payload === 'offline');
+    if (fromBoard) e.state.last_seen_at = new Date();
     switch (sub) {
       case 'status':
         if (payload === 'online') {
-          e.state.last_seen_at = new Date();
           if (!(await markOnline(e))) realtime.emitState(statePayload(e));
         } else if (payload === 'offline') {
           await markOffline(e, 'lwt');
@@ -320,6 +322,7 @@ async function handle(username, sub, payload) {
       default:
         break;
     }
+    if (fromBoard && e.state.is_online) realtime.emitState(statePayload(e));
   });
 }
 
