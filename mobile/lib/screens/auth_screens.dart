@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/session.dart';
 import '../theme.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/common.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(22, 48, 22, 22),
           children: [
-            const Icon(Icons.water_drop_outlined, size: 52, color: C.water),
+            const Center(child: AppLogo(size: 96)),
             const SizedBox(height: 10),
             const Text('Water Tank', textAlign: TextAlign.center, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
@@ -110,6 +111,8 @@ class _SignupScreenState extends State<SignupScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          const Center(child: AppLogo(size: 96)),
+          const SizedBox(height: 20),
           TextField(controller: _name, textCapitalization: TextCapitalization.words, decoration: const InputDecoration(labelText: 'Full name')),
           const SizedBox(height: 14),
           TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone number')),

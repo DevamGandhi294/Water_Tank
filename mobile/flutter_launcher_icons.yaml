@@ -1,0 +1,10 @@
+# Optional: regenerate icons (incl. iOS) with
+#   dart run flutter_launcher_icons
+# after: flutter pub add --dev flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/images/app_icon_1024.png"
+  adaptive_icon_background: "#0277BD"
+  adaptive_icon_foreground: "assets/images/app_icon_1024.png"
