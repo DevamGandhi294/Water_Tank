@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="14 14 80 80" width="1024" height="1024"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#039BE5"/><stop offset="1" stop-color="#01579B"/></linearGradient></defs><rect x="14" y="14" width="80" height="80" rx="18" fill="url(#g)"/>
+  <defs>
+    <clipPath id="tank"><rect x="33" y="34" width="42" height="44" rx="8"/></clipPath>
+  </defs>
+  <!-- tank lid -->
+  <rect x="44" y="28" width="20" height="5" rx="2.5" fill="#FFFFFF"/>
+  <!-- tank body -->
+  <rect x="33" y="34" width="42" height="44" rx="8" fill="#FFFFFF"/>
+  <!-- water -->
+  <g clip-path="url(#tank)">
+    <path d="M28 61 C36 56 42 66 54 61 C66 56 72 66 80 61 L80 82 L28 82 Z" fill="#29B6F6"/>
+    <path d="M28 65 C36 60 42 70 54 65 C66 60 72 70 80 65 L80 82 L28 82 Z" fill="#0288D1"/>
+  </g>
+  <!-- drop -->
+  <path d="M54 39 C54 39 48 45.5 48 49.5 A6 6 0 0 0 60 49.5 C60 45.5 54 39 54 39 Z" fill="#0288D1"/>
+  <!-- legs -->
+  <rect x="38" y="78" width="5" height="6" rx="1.5" fill="#FFFFFF"/>
+  <rect x="65" y="78" width="5" height="6" rx="1.5" fill="#FFFFFF"/>
+</svg>

@@ -5,6 +5,7 @@ import 'screens/home_shell.dart';
 import 'state/live.dart';
 import 'state/session.dart';
 import 'theme.dart';
+import 'widgets/app_logo.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -41,7 +42,18 @@ class WaterTankApp extends StatelessWidget {
       theme: buildTheme(),
       themeMode: ThemeMode.light,
       home: !session.ready
-          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          ? const Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppLogo(size: 96),
+                    SizedBox(height: 24),
+                    CircularProgressIndicator(),
+                  ],
+                ),
+              ),
+            )
           : session.loggedIn
               ? const HomeShell(key: ValueKey('home'))
               : const LoginScreen(key: ValueKey('login')),
