@@ -89,8 +89,8 @@ class _TanksScreenState extends State<TanksScreen> {
     _subs.add(live.on('device:online').listen((e) => _onState(LiveEvent(e.name, {'deviceId': e.deviceId, 'online': e.data['online']}))));
     _subs.add(live.on('access:changed').listen((_) => _load()));
     _subs.add(live.on('invite').listen((_) => _load()));
-    // keep "offline 5 min" texts fresh
-    _tick = Timer.periodic(const Duration(seconds: 30), (_) => mounted ? setState(() {}) : null);
+    // re-check Online / Offline
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
   }
 
   void _onState(LiveEvent e) {
