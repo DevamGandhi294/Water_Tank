@@ -100,17 +100,18 @@ function disconnectUser(userId) {
   if (io) io.in(`user:${userId}`).disconnectSockets(true);
 }
 
-// Per-device throttle: at most one device:state per second, only when it changed.
+// Per-device throttle: at most one device:state per second. lastSeenAt counts as a change,
+// so every message from the board reaches the app as proof that it is still online.
 const throttle = new Map(); // deviceId -> { lastJson, lastAt, timer, pending }
 function emitState(payload) {
   const id = payload.deviceId;
-  const json = JSON.stringify({ ...payload, lastSeenAt: undefined });
+  const json = JSON.stringify(payload);
   let t = throttle.get(id);
   if (!t) { t = { lastJson: null, lastAt: 0, timer: null, pending: null }; throttle.set(id, t); }
   if (json === t.lastJson && !t.pending) return;
   const now = Date.now();
   const send = (p) => {
-    t.lastJson = JSON.stringify({ ...p, lastSeenAt: undefined });
+    t.lastJson = JSON.stringify(p);
     t.lastAt = Date.now();
     t.pending = null;
     t.timer = null;
