@@ -66,9 +66,6 @@ async function timerStart(t, device) {
   const st = await live.stateFor(t.device_id);
   if (!st || !st.is_online) return skip(t, 'offline');
   if (st.pump_on) return skip(t, 'already_running');
-  const s = await db.one('SELECT cutoff_distance_cm, auto_mode FROM device_settings WHERE device_id = $1', [t.device_id]);
-  if (st.distance_cm !== null && st.distance_cm <= s.cutoff_distance_cm) return skip(t, 'tank_full');
-  if (s.auto_mode && (st.status === 'FAULT' || st.status === 'DOWN')) return skip(t, 'sensor_fault');
   if (t.only_if_below_pct != null && st.level_pct != null && st.level_pct >= t.only_if_below_pct) {
     return skip(t, `level_${st.level_pct}`);
   }

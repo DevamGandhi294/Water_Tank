@@ -112,7 +112,7 @@ class _TankScreenState extends State<TankScreen> {
     setState(() => _pendingCommand = null);
     if (status != 'acked') {
       final err = e.data['error'];
-      toast(context, err == 'near' ? 'The tank is already full' : status == 'expired' ? 'The tank did not answer' : 'The tank refused the command${err != null ? ' ($err)' : ''}', bad: true);
+      toast(context, err == 'near' ? 'The tank is already full' : err == 'fault' ? 'The board refused because Auto mode is on. Turn off Auto mode in Tank settings to run the pump without the sensor.' : status == 'expired' ? 'The tank did not answer' : 'The tank refused the command${err != null ? ' ($err)' : ''}', bad: true);
     }
   }
 
@@ -194,14 +194,16 @@ class _TankScreenState extends State<TankScreen> {
       pumpSub = 'Running $mins min · started $src${run.startedBy != null ? ' by ${run.startedBy}' : ''}';
     } else if (!s.online) {
       pumpSub = 'Tank is offline';
+    } else if (s.faulty) {
+      pumpSub = 'Manual only: auto cutoff needs the sensor';
     } else {
       pumpSub = 'Auto cutoff at ${d.settings.cutoffCm.toStringAsFixed(0)} cm';
     }
     final litres = (d.settings.capacityLitres != null && s.levelPct != null) ? ' · about ${(d.settings.capacityLitres! * s.levelPct! / 100).round()} L' : '';
     return ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 24), children: [
-      Row(children: [
+      Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
         statusPill(s, disabled: d.isDisabled),
-        const Spacer(),
+        if (!d.isDisabled) sensorPill(s),
         if (s.lastSeenAt != null) Muted('Updated ${ago(s.lastSeenAt)} ago'),
       ]),
       if (s.online && s.faulty)
@@ -209,7 +211,7 @@ class _TankScreenState extends State<TankScreen> {
           margin: const EdgeInsets.only(top: 12),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: C.badSoft, borderRadius: BorderRadius.circular(12)),
-          child: Text(s.status == 'FAULT' ? 'The sender board is not in range, so the level is unknown.' : 'The ultrasonic sensor gives no reading.', style: const TextStyle(color: C.bad)),
+          child: Text(s.status == 'FAULT' ? 'The sensor board is not in range, so the level is unknown. You can still switch the pump.' : 'The ultrasonic sensor gives no reading. You can still switch the pump.', style: const TextStyle(color: C.bad)),
         ),
       const SizedBox(height: 12),
       Center(child: TankView(levelPct: s.levelPct, distanceCm: s.online ? s.distanceCm : null, cutoffCm: d.settings.cutoffCm, tankHeightCm: d.settings.tankHeightCm)),

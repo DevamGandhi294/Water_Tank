@@ -211,7 +211,12 @@ class _TankCard extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   Expanded(child: Text(tank.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16), overflow: TextOverflow.ellipsis)),
-                  low ? Pill.warn('Low') : statusPill(s, disabled: tank.isDisabled),
+                  if (low) Pill.warn('Low'),
+                ]),
+                const SizedBox(height: 6),
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  statusPill(s, disabled: tank.isDisabled),
+                  if (!tank.isDisabled) sensorPill(s),
                 ]),
                 const SizedBox(height: 4),
                 Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
