@@ -133,7 +133,7 @@ Screen: Tank detail (big ON/OFF button).
 
 | # | Method | Path | Role | Body → Response |
 |---|---|---|---|---|
-| 5.1 | POST | `/devices/:id/pump` | control | `{action: "on" \| "off"}` → `202 {commandId, status: "sent"}`. 409 `DEVICE_OFFLINE`, 409 `TANK_FULL` (ON refused: distance already ≤ cutoff), 409 `SENSOR_FAULT` when status is FAULT/DOWN and safety is on. The final result arrives on Socket.IO `command:result` and `device:state`. |
+| 5.1 | POST | `/devices/:id/pump` | control | `{action: "on" \| "off"}` → `202 {commandId, status: "sent"}`. 409 `DEVICE_OFFLINE`. Sensor status and water level never block this call. The board can still refuse (`command:result` with error `near` or `fault`). The final result arrives on Socket.IO `command:result` and `device:state`. |
 | 5.2 | GET | `/devices/:id/commands/:commandId` | control | → `{id, type, status: "pending" \| "sent" \| "acked" \| "failed" \| "expired", error}`. Fallback if the socket is not connected. |
 
 ## 6. Timers

@@ -210,7 +210,7 @@ class _TankSettingsScreenState extends State<TankSettingsScreen> {
           const Divider(),
           ListRow(
             title: 'Auto mode',
-            subtitle: 'Refuse pump ON when the sensor is not working',
+            subtitle: 'The board refuses pump ON when the sensor is not working',
             trailing: Switch(value: s.autoMode, onChanged: _saving ? null : (v) => _patch({'autoMode': v})),
           ),
           const Divider(),

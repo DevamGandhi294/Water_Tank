@@ -337,10 +337,11 @@ test('5. pump ON/OFF through MQTT, pump run log', async () => {
   const closed = await S.sock.waitFor('pump:run', (p) => !!p.run.endedAt);
   assert.equal(closed.run.stopReason, 'auto_cutoff');
 
-  // full tank: ON refused by the backend
+  // full tank: the backend sends ON anyway, the board's own cutoff refuses it
   r = await h.api('POST', `/devices/${S.deviceId}/pump`, { token: S.token, body: { action: 'on' } });
-  assert.equal(r.status, 409);
-  assert.equal(r.body.error.code, 'TANK_FULL');
+  assert.equal(r.status, 202);
+  const refused = await S.sock.waitFor('command:result', (p) => p.commandId === r.body.commandId);
+  assert.equal(refused.error, 'near');
 
   // button press on the device
   await S.dev.sendState({ cm: 150 });
@@ -514,10 +515,11 @@ test('7b. alerts: settings, tank full notification, sensor fault, offline', asyn
   assert.ok(f.notification.body);
   r = await h.api('GET', '/admin/events?severity=critical&open=true', { token: S.admin });
   assert.ok(r.body.items.some((e) => e.deviceId === S.deviceId && e.type === 'sender_fault'));
-  // ON refused while FAULT and auto mode
+  // manual control still works while the sensor is faulty
   r = await h.api('POST', `/devices/${S.deviceId}/pump`, { token: S.token, body: { action: 'on' } });
-  assert.equal(r.status, 409);
-  assert.equal(r.body.error.code, 'SENSOR_FAULT');
+  assert.equal(r.status, 202);
+  r = await h.api('POST', `/devices/${S.deviceId}/pump`, { token: S.token, body: { action: 'off' } });
+  assert.equal(r.status, 202);
   await S.dev.sendState({ st: 'WORK' });
   await h.until(async () => {
     const x = await h.api('GET', '/admin/events?severity=critical&open=true', { token: S.admin });

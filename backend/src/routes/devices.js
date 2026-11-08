@@ -188,23 +188,17 @@ router.get('/:id/settings/history', deviceAccess('owner'), async (req, res) => {
 });
 
 // ---------------------------------------------------------------- 5. pump
-async function pumpPreflight(device, action) {
+// Manual control needs only an online relay board: sensor status and level never block it.
+async function pumpPreflight(device) {
   if (device.is_disabled) throw E.conflict('DEVICE_DISABLED', 'This tank is disabled by support');
   const st = await live.stateFor(device.id);
   if (!st || !st.is_online) throw E.conflict('DEVICE_OFFLINE', 'The tank is offline');
-  if (action === 'on') {
-    const s = await db.one('SELECT cutoff_distance_cm, auto_mode FROM device_settings WHERE device_id = $1', [device.id]);
-    if (st.distance_cm !== null && st.distance_cm <= s.cutoff_distance_cm) throw E.conflict('TANK_FULL', 'The tank is already full');
-    if (s.auto_mode && (st.status === 'FAULT' || st.status === 'DOWN')) {
-      throw E.conflict('SENSOR_FAULT', 'The level sensor is not working, so the pump cannot be switched on');
-    }
-  }
   return st;
 }
 
 router.post('/:id/pump', deviceAccess('control'), limiter('pump', { limit: 30, windowMs: 60_000, keyFn: (r) => r.params.id }), async (req, res) => {
   const b = parse(z.object({ action: z.enum(['on', 'off']) }), req.body);
-  await pumpPreflight(req.device, b.action);
+  await pumpPreflight(req.device);
   const c = await commands.send(req.device, b.action === 'on' ? 'pump_on' : 'pump_off', {
     source: req.access === 'admin' ? 'admin' : 'app', userId: req.user.id,
   });
