@@ -36,7 +36,7 @@ export default function Firmware() {
       <div className="grid2">
         <form className="card stack" onSubmit={upload}>
           <h3>Upload a release</h3>
-          <div><label className="lbl" htmlFor="ff">Firmware file (.bin, max 1 MB)</label><input id="ff" className="inp" type="file" accept=".bin" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
+          <div><label className="lbl" htmlFor="ff">Firmware file (.bin, max 1.9 MB)</label><input id="ff" className="inp" type="file" accept=".bin" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div>
           <div className="row" style={{ flexWrap: 'nowrap' }}>
             <div style={{ flex: 1 }}><label className="lbl" htmlFor="fv">Version</label><input id="fv" className="inp mono" placeholder="1.4" value={version} onChange={(e) => setVersion(e.target.value)} /></div>
             <div style={{ flex: 1 }}><label className="lbl" htmlFor="fb">Board</label><select id="fb" className="inp" value={board} onChange={(e) => setBoard(e.target.value)}><option value="main">Main (relay)</option><option value="sender">Sender</option></select></div>
@@ -45,6 +45,7 @@ export default function Firmware() {
           {err && <div className="err">{err}</div>}
           <button className="btn" disabled={busy || !file || !version}>Upload</button>
           <div className="small muted">The backend stores the file and its sha256. Marking a release stable also updates <span className="mono">/ota/version.json</span>, which v1.3 boards still read.</div>
+          <div className="small muted">Main boards get a rollout at once over MQTT. Sender boards (fw 5.0+) pick it up the next time they check over Wi-Fi: at boot and every 6 hours.</div>
         </form>
         <div className="card">
           <h3>Rollouts</h3>

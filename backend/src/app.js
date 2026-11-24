@@ -19,6 +19,8 @@ function createApp() {
 
   // firmware downloads (devices) and the legacy version.json
   app.use(require('./routes/firmwareFiles'));
+  // sender boards ask for their OTA update over HTTPS (they have no MQTT)
+  app.use(require('./routes/senderOta'));
 
   app.get('/health', async (_req, res) => {
     let dbOk = false;

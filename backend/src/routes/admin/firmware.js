@@ -13,7 +13,10 @@ const { audit } = require('../../lib/audit');
 const ota = require('../../services/ota');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024, files: 1 } });
+// ESP32 images with Wi-Fi + TLS are ~1.1-1.3 MB. The OTA app slot of the
+// "Minimal SPIFFS (1.9MB APP with OTA)" partition scheme is 0x1E0000 bytes.
+const MAX_FW_BYTES = 0x1e0000;
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_FW_BYTES, files: 1 } });
 
 const fileNameFor = (board, version) => `${board === 'main' ? 'main_relay' : 'sender'}_${version}.bin`;
 
@@ -36,7 +39,7 @@ router.get('/firmware', async (_req, res) => {
 
 router.post('/firmware', (req, res, next) => {
   upload.single('file')(req, res, (err) => {
-    if (err && err.code === 'LIMIT_FILE_SIZE') return next(E.bad('FILE_TOO_BIG', 'Firmware must be at most 1 MB', 'file'));
+    if (err && err.code === 'LIMIT_FILE_SIZE') return next(E.bad('FILE_TOO_BIG', 'Firmware must be at most 1.9 MB (Minimal SPIFFS partition)', 'file'));
     if (err) return next(E.bad('UPLOAD_FAILED', err.message, 'file'));
     next();
   });
@@ -49,8 +52,8 @@ router.post('/firmware', (req, res, next) => {
   const f = req.file;
   if (!f || !f.buffer || !f.size) throw E.bad('FILE_REQUIRED', 'Upload the .bin file', 'file');
   if (!/\.bin$/i.test(f.originalname || '')) throw E.bad('NOT_A_BIN', 'Only .bin files', 'file');
-  // ESP8266 images start with 0xE9
-  if (f.buffer[0] !== 0xe9) throw E.bad('NOT_ESP_IMAGE', 'This does not look like an ESP8266 firmware image', 'file');
+  // ESP32 / ESP8266 app images start with 0xE9
+  if (f.buffer[0] !== 0xe9) throw E.bad('NOT_ESP_IMAGE', 'This does not look like an ESP32 firmware image (.bin from Export Compiled Binary)', 'file');
   if (await db.one('SELECT 1 FROM firmware_releases WHERE board = $1 AND version = $2', [b.board, b.version])) {
     throw E.conflict('VERSION_EXISTS', `Version ${b.version} already exists`, 'version');
   }
