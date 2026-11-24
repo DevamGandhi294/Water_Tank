@@ -15,6 +15,7 @@ const pumpRuns = require('./pumpRuns');
 const commands = require('./commands');
 const settingsSync = require('./settingsSync');
 const ota = require('./ota');
+const deviceLogs = require('./deviceLogs');
 const { levelPct, iso } = require('../lib/format');
 
 const byUsername = new Map(); // mqtt_username -> deviceId
@@ -231,6 +232,7 @@ async function handleState(e, p) {
 }
 
 // wt/<d>/event {"t":"auto_cutoff","cm":24.8} | {"t":"pump","on":1,"src":"button"} | {"t":"reboot","reason":"power"} | {"t":"on_refused","why":"near"}
+//               | {"t":"log",...} (services/deviceLogs.js)
 async function handleEvent(e, p) {
   const t = String(p.t || '');
   switch (t) {
@@ -286,6 +288,9 @@ async function handleEvent(e, p) {
       break;
     case 'config_mode':
       await events.add(e.id, 'config_mode', { message: 'Main board is in Wi-Fi config mode' });
+      break;
+    case 'log': // "Show logs" answer (fw 4.4+), see services/deviceLogs.js
+      deviceLogs.onMainEvent(e.id, p);
       break;
     default:
       logger.debug({ device: e.id, p }, 'unknown device event');

@@ -5,6 +5,9 @@
 //        204 nothing to install
 //   POST /ota/sender/status {"mac":"..","rid":3,"s":"downloading"|"failed","err":".."}
 // "success" is not posted: after the reboot the next check reports the new fw.
+//   Both GET answers carry "X-Send-Log: 1" when an admin clicked "Show logs" for this sender;
+//   the sender (fw 5.2+) then sends its last ~100 Serial lines as text/plain:
+//   POST /ota/sender/log?mac=<sender MAC>&fw=<running version>   -> 204
 // The board is known by the sender MAC registered in the admin panel (the same MAC-only
 // trust as the main board's MQTT login).
 const express = require('express');
@@ -13,6 +16,7 @@ const { E } = require('../errors');
 const { normalizeMac, compareVersions } = require('../lib/format');
 const { limiter } = require('../middleware/rateLimit');
 const ota = require('../services/ota');
+const deviceLogs = require('../services/deviceLogs');
 
 const router = express.Router();
 const VERSION = /^\d+(\.\d+){0,3}$/;
@@ -39,6 +43,7 @@ router.get('/ota/sender', perMac, async (req, res) => {
   if (fw && fw !== b.fw_version) await db.query('UPDATE device_boards SET fw_version = $2 WHERE id = $1', [b.id, fw]);
   if (fw) await ota.checkFirmware(b.device_id, fw, 'sender'); // a rollout to this version is done
   res.set('Cache-Control', 'no-store');
+  if (deviceLogs.senderWanted(b.device_id)) res.set('X-Send-Log', '1');
 
   const job = await db.one(
     `SELECT o.id AS rollout_id, od.status, f.id AS release_id, f.version, f.sha256, f.file_size
@@ -78,6 +83,13 @@ router.post('/ota/sender/status', express.json({ limit: '2kb' }), perMac, async 
   );
   if (!own) throw E.notFound('ROLLOUT_NOT_FOUND', 'No such update for this sender');
   await ota.handleStatus(b.device_id, { rid, s, err: p.err });
+  res.status(204).end();
+});
+
+router.post('/ota/sender/log', express.text({ type: () => true, limit: '64kb' }), perMac, async (req, res) => {
+  const b = await senderBoard(req.query.mac);
+  const fw = VERSION.test(String(req.query.fw || '')) ? String(req.query.fw) : null;
+  deviceLogs.onSenderLog(b.device_id, typeof req.body === 'string' ? req.body : '', fw);
   res.status(204).end();
 });
 

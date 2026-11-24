@@ -213,6 +213,9 @@ All paths start with `/admin`. Every write also inserts into `audit_log`.
 | 10.11 | POST | `/admin/devices/:id/transfer` | `{toPhone}` → device. Moves ownership. |
 | 10.12 | POST | `/admin/devices/:id/boards` | `{role, mac}` → replaces a board for repair (old row gets `replaced_at`). |
 | 10.13 | POST | `/admin/devices/:id/commands` | `{type: "pump_on" \| "pump_off" \| "reboot" \| "config_mode" \| "ota_check" \| "apply_settings"}` → `202 {commandId}` |
+| 10.13a | GET | `/admin/devices/:id/logs` | last log of each board → `{main, sender, liveUntil, mainRequestedAt, senderRequestedAt}` (memory only) |
+| 10.13b | POST | `/admin/devices/:id/logs` | `{board: "main" \| "sender"}` → `202`. Main (fw 4.4+, online): answers over MQTT within seconds. Sender (fw 5.2+): at its next Wi-Fi check |
+| 10.13c | POST | `/admin/devices/:id/logs/live` | `{on: boolean}` → `{liveUntil}`: main board streams new Serial lines for 10 min (Socket.IO `device:log_live`) |
 | 10.14 | PATCH | `/admin/devices/:id/settings` | same as 4.2, for support |
 | 10.15 | DELETE | `/admin/devices/:id` | → `204`. Only if never claimed (mistyped MAC). |
 
@@ -287,8 +290,8 @@ Broker: Mosquitto with TLS on 8883 (1883 only on localhost/LAN for testing). Use
 |---|---|---|---|
 | `wt/<d>/status` | ESP → | 1, retained | `"online"` on connect. **Last will:** `"offline"`. |
 | `wt/<d>/state` | ESP → | 0 | `{"st":"WORK","pump":1,"cm":62.4,"rssi":-61,"up":86400,"fw":"1.3","snd":1}`. Every 5 s, and at once on any change. Backend upserts `device_state`. |
-| `wt/<d>/event` | ESP → | 1 | `{"t":"auto_cutoff","cm":24.8}`, `{"t":"pump","on":1,"src":"button"}`, `{"t":"reboot","reason":"power"}`, `{"t":"on_refused","why":"near"}` |
-| `wt/<d>/cmd` | → ESP | 1 | `{"id":812,"c":"pump_on"}` (`pump_off`, `reboot`, `config_mode`, `ota_check`) |
+| `wt/<d>/event` | ESP → | 1 | `{"t":"auto_cutoff","cm":24.8}`, `{"t":"pump","on":1,"src":"button"}`, `{"t":"reboot","reason":"power"}`, `{"t":"on_refused","why":"near"}`, `{"t":"log",...}` (Show logs, see services/deviceLogs.js) |
+| `wt/<d>/cmd` | → ESP | 1 | `{"id":812,"c":"pump_on"}` (`pump_off`, `reboot`, `config_mode`, `ota_check`); `{"id":0,"c":"logs"}`, `log_live_on`, `log_live_off` (fw 4.4, not acked) |
 | `wt/<d>/cmd/ack` | ESP → | 1 | `{"id":812,"ok":1}` or `{"id":812,"ok":0,"err":"near"}` |
 | `wt/<d>/settings/set` | → ESP | 1, retained | `{"v":4,"cutoff_cm":35,"auto":1,"max_min":60}` |
 | `wt/<d>/settings/ack` | ESP → | 1 | `{"v":4}` after saving to EEPROM |

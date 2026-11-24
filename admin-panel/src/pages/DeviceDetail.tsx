@@ -6,6 +6,7 @@ import { ago, fmtDate, fmtShort } from '../lib/format';
 import type { DeviceEvent, Settings } from '../lib/types';
 import { errText, Level, Modal, sevColor, StatePill, useLoad, useToast } from '../components/ui';
 import { downloadPng, Sticker } from './Register';
+import DeviceLogs from '../components/DeviceLogs';
 
 type Dialog = null | 'claim' | 'unclaim' | 'transfer' | 'board' | 'settings' | 'edit' | 'delete';
 
@@ -87,6 +88,8 @@ export default function DeviceDetail() {
           </div>
         </div>
       </div>
+
+      <DeviceLogs deviceId={d.id} online={!!d.state.online} hasSender={!!sender} />
 
       <div className="grid2" style={{ marginTop: 14 }}>
         <div className="card">
