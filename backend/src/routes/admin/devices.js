@@ -16,6 +16,7 @@ const mqtt = require('../../services/mqtt');
 const realtime = require('../../services/realtime');
 const settingsService = require('../../services/settingsService');
 const settingsSync = require('../../services/settingsSync');
+const deviceLogs = require('../../services/deviceLogs');
 const { releaseDevice } = require('../devices');
 const { forget: forgetMqttLogin } = require('../mqttAuth');
 
@@ -300,6 +301,43 @@ router.post('/:id/commands', async (req, res) => {
   const c = await commands.send(d, b.type, { source: 'admin', userId: req.user.id });
   await audit(req, 'device.command', 'device', d.id, { type: b.type, commandId: c.id });
   res.status(202).json({ commandId: c.id, status: c.status });
+});
+
+// "Show logs": last ~100 Serial Monitor lines of the main board (fw 4.4+) or the sender (fw 5.2+)
+router.get('/:id/logs', async (req, res) => {
+  const d = await loadDevice(req);
+  res.json(deviceLogs.get(d.id));
+});
+
+router.post('/:id/logs', async (req, res) => {
+  const d = await loadDevice(req);
+  const b = parse(z.object({ board: z.enum(['main', 'sender']).default('main') }), req.body || {});
+  if (b.board === 'sender') {
+    const s = await db.one(`SELECT 1 FROM device_boards WHERE device_id = $1 AND role = 'sender' AND replaced_at IS NULL`, [d.id]);
+    if (!s) throw E.conflict('NO_SENDER', 'This device has no sender board registered');
+    deviceLogs.senderRequested(d.id);
+    return res.status(202).json(deviceLogs.get(d.id));
+  }
+  const st = await live.stateFor(d.id);
+  if (!st || !st.is_online) throw E.conflict('DEVICE_OFFLINE', 'The device is offline');
+  const ok = await mqtt.publish(mqtt.deviceTopic(d.mqtt_username, 'cmd'), { id: 0, c: 'logs' }, { qos: 1 });
+  if (!ok) throw E.conflict('BROKER_UNAVAILABLE', 'Could not reach the MQTT broker');
+  deviceLogs.mainRequested(d.id);
+  res.status(202).json(deviceLogs.get(d.id));
+});
+
+// live log of the main board: on = stream new lines for 10 minutes (call again to extend)
+router.post('/:id/logs/live', async (req, res) => {
+  const d = await loadDevice(req);
+  const b = parse(z.object({ on: z.boolean() }), req.body || {});
+  if (b.on) {
+    const st = await live.stateFor(d.id);
+    if (!st || !st.is_online) throw E.conflict('DEVICE_OFFLINE', 'The device is offline');
+  }
+  const ok = await mqtt.publish(mqtt.deviceTopic(d.mqtt_username, 'cmd'), { id: 0, c: b.on ? 'log_live_on' : 'log_live_off' }, { qos: 1 });
+  if (!ok && b.on) throw E.conflict('BROKER_UNAVAILABLE', 'Could not reach the MQTT broker');
+  const until = deviceLogs.setLive(d.id, b.on);
+  res.json({ liveUntil: until ? new Date(until).toISOString() : null });
 });
 
 // 10.14 settings for support

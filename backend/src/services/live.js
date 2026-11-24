@@ -15,6 +15,7 @@ const pumpRuns = require('./pumpRuns');
 const commands = require('./commands');
 const settingsSync = require('./settingsSync');
 const ota = require('./ota');
+const deviceLogs = require('./deviceLogs');
 const { levelPct, iso } = require('../lib/format');
 
 const byUsername = new Map(); // mqtt_username -> deviceId
@@ -97,6 +98,9 @@ function statePayload(e) {
     distanceCm: e.state.distance_cm,
     levelPct: e.state.level_pct,
     lastSeenAt: iso(e.state.last_seen_at),
+    // every board message is forwarded (the board reports every 5 s), so the app may show
+    // Offline when they stop; an app talking to an older backend without this flag must not
+    live: true,
   };
 }
 
@@ -188,7 +192,12 @@ async function handleState(e, p) {
   if (p.pump !== undefined) s.pump_on = p.pump === 1 || p.pump === true || p.pump === '1';
   if (p.cm !== undefined) {
     const cm = Number(p.cm);
-    s.distance_cm = p.cm === null || !Number.isFinite(cm) || cm < 0 ? null : Math.round(cm * 10) / 10;
+    const valid = p.cm !== null && Number.isFinite(cm) && cm >= 0;
+    // The sender reads about every 10 s. One missed echo makes cm null while the board still
+    // says WORK (it says DOWN after 3 in a row, FAULT when the sender is silent), so keep the
+    // last good distance through that single gap instead of blanking the level in the app.
+    if (valid) s.distance_cm = Math.round(cm * 10) / 10;
+    else if (s.status !== 'WORK') s.distance_cm = null;
   }
   if (p.rssi !== undefined) s.wifi_rssi = Number.isFinite(Number(p.rssi)) ? Math.round(Number(p.rssi)) : null;
   if (p.up !== undefined) s.uptime_s = Number.isFinite(Number(p.up)) ? Math.round(Number(p.up)) : null;
@@ -223,6 +232,7 @@ async function handleState(e, p) {
 }
 
 // wt/<d>/event {"t":"auto_cutoff","cm":24.8} | {"t":"pump","on":1,"src":"button"} | {"t":"reboot","reason":"power"} | {"t":"on_refused","why":"near"}
+//               | {"t":"log",...} (services/deviceLogs.js)
 async function handleEvent(e, p) {
   const t = String(p.t || '');
   switch (t) {
@@ -278,6 +288,9 @@ async function handleEvent(e, p) {
       break;
     case 'config_mode':
       await events.add(e.id, 'config_mode', { message: 'Main board is in Wi-Fi config mode' });
+      break;
+    case 'log': // "Show logs" answer (fw 4.4+), see services/deviceLogs.js
+      deviceLogs.onMainEvent(e.id, p);
       break;
     default:
       logger.debug({ device: e.id, p }, 'unknown device event');

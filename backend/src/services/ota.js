@@ -22,10 +22,12 @@ async function setStatus(rolloutId, deviceId, status, error = null) {
   return row;
 }
 
-// Send one device its OTA message (only if it is online and the rollout is still active)
+// Send one device its OTA message (only if it is online and the rollout is still active).
+// Only main-board releases go over MQTT: wt/<d>/ota is read by the MAIN board, which would
+// otherwise install a sender image on itself. Senders ask for their update (routes/senderOta.js).
 async function sendToDevice(rolloutId, deviceId) {
   const r = await db.one(
-    `SELECT o.id AS rollout_id, o.cancelled_at, f.id AS release_id, f.version, f.sha256, f.file_size,
+    `SELECT o.id AS rollout_id, o.cancelled_at, f.id AS release_id, f.board, f.version, f.sha256, f.file_size,
             d.mqtt_username, COALESCE(s.is_online, false) AS online, d.is_disabled
        FROM ota_rollouts o JOIN firmware_releases f ON f.id = o.release_id
        JOIN ota_rollout_devices od ON od.rollout_id = o.id AND od.device_id = $2
@@ -34,7 +36,7 @@ async function sendToDevice(rolloutId, deviceId) {
       WHERE o.id = $1`,
     [rolloutId, deviceId],
   );
-  if (!r || r.cancelled_at || !r.online || r.is_disabled) return false;
+  if (!r || r.board !== 'main' || r.cancelled_at || !r.online || r.is_disabled) return false;
   const ok = await mqtt.publish(mqtt.deviceTopic(r.mqtt_username, 'ota'), {
     rid: r.rollout_id,
     ver: r.version,
@@ -50,7 +52,8 @@ async function sendToDevice(rolloutId, deviceId) {
 async function sendPendingFor(deviceId) {
   const rows = await db.many(
     `SELECT od.rollout_id FROM ota_rollout_devices od JOIN ota_rollouts o ON o.id = od.rollout_id
-      WHERE od.device_id = $1 AND od.status = 'pending' AND o.cancelled_at IS NULL
+       JOIN firmware_releases f ON f.id = o.release_id
+      WHERE od.device_id = $1 AND od.status = 'pending' AND o.cancelled_at IS NULL AND f.board = 'main'
       ORDER BY o.created_at DESC LIMIT 1`,
     [deviceId],
   );
@@ -103,13 +106,14 @@ async function handleStatus(deviceId, p) {
   }
 }
 
-// the board reported a new fw in its state: close any rollout waiting for that version
-async function checkFirmware(deviceId, fw) {
+// the board reported a new fw (main: in its state, sender: in its OTA check):
+// close any rollout for that board waiting for that version
+async function checkFirmware(deviceId, fw, board = 'main') {
   const rows = await db.many(
     `SELECT od.rollout_id, f.version FROM ota_rollout_devices od
        JOIN ota_rollouts o ON o.id = od.rollout_id JOIN firmware_releases f ON f.id = o.release_id
-      WHERE od.device_id = $1 AND od.status IN ('sent', 'downloading') AND f.version = $2`,
-    [deviceId, fw],
+      WHERE od.device_id = $1 AND od.status IN ('sent', 'downloading') AND f.version = $2 AND f.board = $3`,
+    [deviceId, fw, board],
   );
   for (const r of rows) await finished(r.rollout_id, deviceId, true, null, r.version);
 }
